@@ -10,6 +10,7 @@ class AppTest {
     @Test
     void sanityCheck() {
         // This test verifies that the test runner is working.
+        System.out.println(" Test will work, duhh!! ");
         assertTrue(true);
     }
 }

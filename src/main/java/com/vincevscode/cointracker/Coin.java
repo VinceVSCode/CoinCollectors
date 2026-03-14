@@ -29,4 +29,13 @@ public class Coin {
         return year;
     }
 
+    @Override
+    public String toString(){
+        return "Coin{" +
+                "id=" + id +
+                ", country='" + country + '\'' +
+                ", denomination='" + denomination + '\'' +
+                ", year=" + year +
+                '}';
+    }
 }

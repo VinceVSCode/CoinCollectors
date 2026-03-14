@@ -17,13 +17,7 @@ public class App {
         System.out.println("Coins in repository:");
 
         for (Coin coin : coins) {
-            System.out.println(
-                    "ID: " + coin.getId()
-                            + ", Country: " + coin.getCountry()
-                            + ", Denomination: " + coin.getDenomination()
-                            + ", Year: " + coin.getYear()
-            );
+            System.out.println(coin);
         }
-
     }
 }
