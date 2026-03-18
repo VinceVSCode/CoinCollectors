@@ -1,4 +1,4 @@
-package com.vincevscode.cointracker;
+package com.vincevscode.cointracker.model;
 
 public class Coin {
     private int id;

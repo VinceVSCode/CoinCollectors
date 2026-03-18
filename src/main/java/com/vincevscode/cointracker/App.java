@@ -1,7 +1,8 @@
 // v0.1.0: Minimal application entry point to verify build/run works.
 package com.vincevscode.cointracker;
 
-import java.util.List;
+import com.vincevscode.cointracker.model.Coin;
+import com.vincevscode.cointracker.repository.CoinRepository;
 
 public class App {
     public static void main(String[] args) {
@@ -12,11 +13,25 @@ public class App {
         coinRepository.addCoin(new Coin(2, "Germany", "1 Euro", 2010));
         coinRepository.addCoin(new Coin(3, "France", "2 Euro", 2015));
 
-        List<Coin> coins = coinRepository.getAllCoins();
-
         System.out.println("Coins in repository:");
 
-        for (Coin coin : coins) {
+        for (Coin coin : coinRepository.getAllCoins()) {
+            System.out.println(coin);
+        }
+
+        System.out.println();
+
+        boolean removed = coinRepository.removeCoinById(2);
+
+        if (removed) {
+            System.out.println("Coin with ID 2 removed successfully.");
+        } else {
+            System.out.println("Coin with ID 2 was not found.");
+        }
+
+        System.out.println();
+        System.out.println("All coins after removal:");
+        for (Coin coin : coinRepository.getAllCoins()) {
             System.out.println(coin);
         }
     }
