@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CoinRepository {
-    private final List<Coin> coins;
+    private List<Coin> coins;
 
     public CoinRepository() {
         this.coins = new ArrayList<>();

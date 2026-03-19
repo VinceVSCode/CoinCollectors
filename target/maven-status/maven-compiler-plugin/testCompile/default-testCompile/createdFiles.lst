@@ -1,2 +1,3 @@
-com\vincevscode\cointracker\CoinRepositoryTest.class
+com\vincevscode\cointracker\service\CoinCatalogServiceTest.class
 com\vincevscode\cointracker\AppTest.class
+com\vincevscode\cointracker\repository\CoinRepositoryTest.class

@@ -55,7 +55,7 @@ class CoinRepositoryTest {
                 IllegalArgumentException.class,
                 () -> repository.addCoin(new Coin(1, "France", "2 Euro", 2015))
         );
-        assertEquals("Coin with ID 1 already exists.", exception.getMessage());
+        assertEquals("Coin with Id 1 already exists.", exception.getMessage());
     }
 
     @Test
@@ -79,6 +79,17 @@ class CoinRepositoryTest {
         boolean removed = repository.removeCoinById(99);
 
         assertFalse(removed);
+        assertEquals(1, repository.getAllCoins().size());
+    }
+
+    @Test
+    void getAllCoins_shouldReturnCopyOfInternalList() {
+        CoinRepository repository = new CoinRepository();
+        repository.addCoin(new Coin(1, "Bulgaria", "1 Lev", 2002));
+
+        List<Coin> coins = repository.getAllCoins();
+        coins.clear();
+
         assertEquals(1, repository.getAllCoins().size());
     }
 }

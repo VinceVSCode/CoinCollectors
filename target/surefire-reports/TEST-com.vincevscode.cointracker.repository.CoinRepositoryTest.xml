@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.vincevscode.cointracker.AppTest" time="0.118" tests="1" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.vincevscode.cointracker.repository.CoinRepositoryTest" time="0.136" tests="6" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -64,8 +64,10 @@
     <property name="maven.repo.local" value="C:\Users\User\.m2\repository"/>
     <property name="java.class.version" value="65.0"/>
   </properties>
-  <testcase name="sanityCheck" classname="com.vincevscode.cointracker.AppTest" time="0.069">
-    <system-out><![CDATA[ Test will work, duhh!! 
-]]></system-out>
-  </testcase>
+  <testcase name="addCoin_shouldThrowExceptionWhenIdAlreadyExists" classname="com.vincevscode.cointracker.repository.CoinRepositoryTest" time="0.054"/>
+  <testcase name="addCoin_shouldStoreCoinInRepository" classname="com.vincevscode.cointracker.repository.CoinRepositoryTest" time="0.008"/>
+  <testcase name="findCoinById_shouldReturnCoinWhenIdExists" classname="com.vincevscode.cointracker.repository.CoinRepositoryTest" time="0.004"/>
+  <testcase name="removeCoinById_shouldReturnTrueWhenCoinExists" classname="com.vincevscode.cointracker.repository.CoinRepositoryTest" time="0.006"/>
+  <testcase name="findCoinById_shouldReturnNullWhenIdDoesNotExist" classname="com.vincevscode.cointracker.repository.CoinRepositoryTest" time="0.007"/>
+  <testcase name="removeCoinById_shouldReturnFalseWhenCoinDoesNotExist" classname="com.vincevscode.cointracker.repository.CoinRepositoryTest" time="0.002"/>
 </testsuite>
