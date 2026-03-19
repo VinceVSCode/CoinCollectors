@@ -1,4 +1,6 @@
 C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\App.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\cli\CoinCatalogCli.java
 C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\model\Coin.java
-C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\repository\CoinRepository.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\repository\CoinRepositoryInterface.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\repository\InMemoryCoinRepository.java
 C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\service\CoinCatalogService.java

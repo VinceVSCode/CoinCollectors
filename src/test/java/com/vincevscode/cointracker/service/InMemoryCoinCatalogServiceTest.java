@@ -1,17 +1,17 @@
 // created at v0.1.6 for simple services Testing
 package com.vincevscode.cointracker.service;
 
-import com.vincevscode.cointracker.repository.CoinRepository;
+import com.vincevscode.cointracker.repository.InMemoryCoinRepository;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class CoinCatalogServiceTest {
+public class InMemoryCoinCatalogServiceTest {
 
     @Test
     void addCoin_shouldStoreCoinThroughService() {
-        CoinRepository repository = new CoinRepository();
+        InMemoryCoinRepository repository = new InMemoryCoinRepository();
         CoinCatalogService service = new CoinCatalogService(repository);
 
         service.addCoin(1, "Bulgaria", "1 Lev", 2002);
@@ -22,7 +22,7 @@ public class CoinCatalogServiceTest {
 
     @Test
     void removeCoinById_shouldRemoveCoinThroughService() {
-        CoinRepository repository = new CoinRepository();
+        InMemoryCoinRepository repository = new InMemoryCoinRepository();
         CoinCatalogService service = new CoinCatalogService(repository);
 
         service.addCoin(1, "Bulgaria", "1 Lev", 2002);

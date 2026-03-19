@@ -5,13 +5,14 @@ import com.vincevscode.cointracker.model.Coin;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CoinRepository {
+public class InMemoryCoinRepository implements CoinRepositoryInterface{
     private List<Coin> coins;
 
-    public CoinRepository() {
+    public InMemoryCoinRepository() {
         this.coins = new ArrayList<>();
     }
 
+    @Override
     public void addCoin(Coin coin) {
         if (findCoinById(coin.getId()) != null) {
             throw new IllegalArgumentException("Coin with Id " + coin.getId() + " already exists.");
@@ -19,11 +20,13 @@ public class CoinRepository {
         coins.add(coin);
     }
 
+    @Override
     public List<Coin> getAllCoins() {
         // changed so it does not expose the direct list.
         return new ArrayList<>(coins);
     }
 
+    @Override
     public Coin findCoinById(int id) {
         for (Coin coin : coins) {
             if (coin.getId() == id) {
@@ -44,6 +47,8 @@ public class CoinRepository {
 //        }
 //        System.out.println(" No coin with such id was found.");
 //    }
+
+    @Override
     public boolean removeCoinById(int id) {
         // AI implementation.
         Coin coinToRemove = findCoinById(id);

@@ -2,23 +2,35 @@
 package com.vincevscode.cointracker.service;
 
 import com.vincevscode.cointracker.model.Coin;
-import com.vincevscode.cointracker.repository.CoinRepository;
+import com.vincevscode.cointracker.repository.CoinRepositoryInterface;
+
 
 import java.util.List;
 
 public class CoinCatalogService {
 
-    private CoinRepository coinRepository;
+    private CoinRepositoryInterface coinRepository;
 
-    public CoinCatalogService(CoinRepository coinRepository) {
+    public CoinCatalogService(CoinRepositoryInterface coinRepository) {
         this.coinRepository = coinRepository;
     }
 
     public void addCoin(Coin coin) {
+        // First validate then entry.
+        validateCoinData(
+                coin.getId(),
+                coin.getCountry(),
+                coin.getDenomination(),
+                coin.getYear()
+        );
+
         coinRepository.addCoin(coin);
     }
 
     public void addCoin(int id, String country, String denomination, int year) {
+        // First validate then handle any entry.
+        validateCoinData(id, country, denomination, year);
+
         Coin coin = new Coin(id, country, denomination, year);
         coinRepository.addCoin(coin);
     }
@@ -33,5 +45,23 @@ public class CoinCatalogService {
 
     public boolean removeCoinById(int id) {
         return coinRepository.removeCoinById(id);
+    }
+
+    private void validateCoinData(int id, String country, String denomination, int year) {
+        if (id <= 0) {
+            throw new IllegalArgumentException("Coin ID must be greater than 0.");
+        }
+
+        if (country == null || country.isBlank()) {
+            throw new IllegalArgumentException("Country cannot be blank.");
+        }
+
+        if (denomination == null || denomination.isBlank()) {
+            throw new IllegalArgumentException("Denomination cannot be blank.");
+        }
+
+        if (year <= 0) {
+            throw new IllegalArgumentException("Year must be greater than 0.");
+        }
     }
 }
