@@ -36,6 +36,18 @@ public class InMemoryCoinRepository implements CoinRepositoryInterface{
         return null;
     }
 
+    @Override
+    public boolean updateCoin(Coin updatedCoin) {
+        // Simple logic. If the id is the same, update the coin with the parameters.
+        for(Coin coin : coins) {
+            if(coin.getId() == updatedCoin.getId()) {
+                coins.set(coin.getId(), updatedCoin);
+                return true;
+            }
+        }
+        return false;
+    }
+
 //   public void removeCoinById(int id){
 //        // My implementation, a small copy of findCoinById
 //        for (Coin coin: coins){

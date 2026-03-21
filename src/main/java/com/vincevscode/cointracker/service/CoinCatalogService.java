@@ -1,4 +1,4 @@
-// v0.1.6 Service layer for coin catalog operations.
+// Created at v0.1.6 Service layer for coin catalog operations.
 package com.vincevscode.cointracker.service;
 
 import com.vincevscode.cointracker.model.Coin;
@@ -41,6 +41,13 @@ public class CoinCatalogService {
 
     public Coin findCoinById(int id) {
         return coinRepository.findCoinById(id);
+    }
+
+    public boolean updateCoin(int id, String country, String denomination, int year) {
+        validateCoinData(id, country, denomination, year);
+
+        Coin updatedCoin = new Coin(id, country, denomination, year);
+        return coinRepository.updateCoin(updatedCoin);
     }
 
     public boolean removeCoinById(int id) {

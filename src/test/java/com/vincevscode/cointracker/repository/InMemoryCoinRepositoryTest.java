@@ -23,6 +23,31 @@ class InMemoryCoinRepositoryTest {
     }
 
     @Test
+    void findCoinById_shouldReturnCoinWhenIdExists() {
+        InMemoryCoinRepository repository = new InMemoryCoinRepository();
+        Coin coin = new Coin(2, "Germany", "1 Euro", 2010);
+
+        repository.addCoin(coin);
+
+        Coin foundCoin = repository.findCoinById(2);
+
+        assertEquals(coin, foundCoin);
+    }
+
+    @Test
+    void addCoin_shouldStoreCoinInRepository() {
+        InMemoryCoinRepository repository = new InMemoryCoinRepository();
+        Coin coin = new Coin(1, "Bulgaria", "1 Lev", 2002);
+
+        repository.addCoin(coin);
+
+        List<Coin> coins = repository.getAllCoins();
+
+        assertEquals(1, coins.size());
+        assertEquals("Bulgaria", coins.get(0).getCountry());
+    }
+
+    @Test
     void removeCoinById_shouldRemoveCoinThroughService() {
         InMemoryCoinRepository repository = new InMemoryCoinRepository();
         CoinCatalogService service = new CoinCatalogService(repository);
@@ -144,4 +169,14 @@ class InMemoryCoinRepositoryTest {
 
         assertEquals(1, repository.getAllCoins().size());
     }
+
+    @Test
+    void updateCoin_shouldReturnFalseWhenCoinDoesNotExist() {
+        InMemoryCoinRepository repository = new InMemoryCoinRepository();
+
+        boolean updated = repository.updateCoin(new Coin(99, "France", "2 Euro", 2015));
+
+        assertFalse(updated);
+    }
+
 }

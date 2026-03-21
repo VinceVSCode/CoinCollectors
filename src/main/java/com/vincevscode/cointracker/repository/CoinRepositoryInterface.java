@@ -12,5 +12,7 @@ public interface CoinRepositoryInterface {
 
     Coin findCoinById(int id);
 
+    boolean updateCoin(Coin updatedCoin);
+
     boolean removeCoinById(int id);
 }
