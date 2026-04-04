@@ -5,6 +5,25 @@ The aim of this folder is an application for coin collectors A learning project:
 - Java 21+
 - Maven 3.9+
 
+## Repository selection
+
+The application chooses the repository implementation using the environment variable:
+
+- `COIN_TRACKER_REPOSITORY`
+
+Supported values:
+- `memory`
+- `postgres`
+
+Example:
+
+## ENV VAR
+COIN_TRACKER_REPOSITORY=memory or postgres
+COIN_TRACKER_URL = YOUR_URL
+COIN_TRACKER_USERNAME = YOUR_USERNAME
+COIN_TRACKER_PASSWORD = YOUR_PASSWORD
+
 ## Run
 ```bash
 mvn -q compile exec:java -Dexec.mainClass="com.vincevscode.cointracker.App"
+
