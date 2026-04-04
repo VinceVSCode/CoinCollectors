@@ -3,15 +3,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
-## [0.2.3] - 2026-04-26 
+## [0.2.4] - 2026-04-26 
 
 ### Added
-- `updateCoin(Coin updatedCoin)` in `PostgresCoinRepository`.
-- Validation for missing database environment variables.
+- Integration tests for `PostgresCoinRepository`.
+- Automatic table cleanup before each PostgreSQL repository test.
 
 ### Changed
-- `App.java` now supports manual PostgreSQL update testing.
-- `DatabaseConnection` now reads PostgreSQL settings from environment variables instead of hardcoded values.
+- PostgreSQL repository behavior is now verified against a real database.
 
 ### Removed
 - N/A
