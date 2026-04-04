@@ -28,6 +28,8 @@ public class PostgresCoinRepository implements CoinRepositoryInterface {
             statement.setString(3, coin.getDenomination());
             statement.setInt(4, coin.getYear());
 
+            statement.executeUpdate();
+
 
         } catch (SQLException exception) {
             throw new RuntimeException("Failed to add coin to PostgreSQL", exception);
@@ -66,7 +68,33 @@ public class PostgresCoinRepository implements CoinRepositoryInterface {
 
     @Override
     public Coin findCoinById(int id) {
-        throw new UnsupportedOperationException("findCoinById is not implemented yet.");
+        String sql = """
+                SELECT id, country, denomination, year
+                FROM coins
+                WHERE id = ?
+                """;
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setInt(1, id);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    int coinId = resultSet.getInt("id");
+                    String country = resultSet.getString("country");
+                    String denomination = resultSet.getString("denomination");
+                    int year = resultSet.getInt("year");
+
+                    return new Coin(coinId, country, denomination, year);
+                }
+            }
+
+        } catch (SQLException exception) {
+            throw new RuntimeException("Failed to find coin by ID " + id +" in PostgreSQL.", exception);
+        }
+
+        return null;
     }
 
     @Override

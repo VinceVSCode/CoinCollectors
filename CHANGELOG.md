@@ -3,18 +3,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
-## [0.1.8] - 2026-03-21 
+## [0.2.1] - 2026-04-26 
 
 ### Added
-- `PostgresCoinRepository` with PostgreSQL-backed `addCoin` and `getAllCoins`.
-- Basic JDBC integration through `DatabaseConnection`.
+- `findCoinById(int id)` in `PostgresCoinRepository`.
+
 ### Changed
-- `App.java` can now be used to manually test PostgreSQL-backed coin storage.
+- `App.java` now supports manual PostgreSQL lookup testing.
+
 ### Removed
 - N/A
 
 ### Fixed
-- N/A
+- 'App.java' does not communicate correctly.
 
 ### Bugs
-- 'App.java' does not communicate correctly.
+- N/A
