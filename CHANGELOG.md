@@ -3,19 +3,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
-## [0.2.2] - 2026-04-26 
+## [0.2.3] - 2026-04-26 
 
 ### Added
-- `removeCoinById(int id)` in `PostgresCoinRepository`.
+- `updateCoin(Coin updatedCoin)` in `PostgresCoinRepository`.
+- Validation for missing database environment variables.
 
 ### Changed
-- `App.java` now supports manual PostgreSQL delete testing.
+- `App.java` now supports manual PostgreSQL update testing.
+- `DatabaseConnection` now reads PostgreSQL settings from environment variables instead of hardcoded values.
 
 ### Removed
 - N/A
 
 ### Fixed
-- 'App.java' does not communicate correctly.
+- N/A
 
 ### Bugs
 - N/A

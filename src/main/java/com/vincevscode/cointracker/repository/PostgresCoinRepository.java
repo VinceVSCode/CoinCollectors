@@ -99,7 +99,27 @@ public class PostgresCoinRepository implements CoinRepositoryInterface {
 
     @Override
     public boolean updateCoin(Coin updatedCoin) {
-        throw new UnsupportedOperationException("updateCoin is not implemented yet.");
+        String sql = """
+                UPDATE coins
+                SET country = ?, denomination = ?, year = ?
+                WHERE id = ?
+                """;
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setString(1, updatedCoin.getCountry());
+            statement.setString(2, updatedCoin.getDenomination());
+            statement.setInt(3, updatedCoin.getYear());
+            statement.setInt(4, updatedCoin.getId());
+
+            int affectedRows = statement.executeUpdate();
+
+            return affectedRows > 0;
+
+        } catch (SQLException exception) {
+            throw new RuntimeException("Failed to update coin in PostgreSQL.", exception);
+        }
     }
 
     @Override
