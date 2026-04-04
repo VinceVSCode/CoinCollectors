@@ -104,6 +104,22 @@ public class PostgresCoinRepository implements CoinRepositoryInterface {
 
     @Override
     public boolean removeCoinById(int id) {
-        throw new UnsupportedOperationException("removeCoinById is not implemented yet.");
+        String sql = """
+                DELETE FROM coins
+                WHERE id = ?
+                """;
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setInt(1, id);
+
+            int affectedRows = statement.executeUpdate();
+
+            return affectedRows > 0;
+
+        } catch (SQLException exception) {
+            throw new RuntimeException("Failed to remove with ID "+ id +" coin from PostgreSQL.", exception);
+        }
     }
 }
