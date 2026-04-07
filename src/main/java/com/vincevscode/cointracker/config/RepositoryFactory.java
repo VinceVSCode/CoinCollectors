@@ -1,4 +1,4 @@
-// v0.2.5: Factory for creating repository implementations from environment configuration.
+// v0.2.6: Factory for creating repository implementations from environment configuration.
 package com.vincevscode.cointracker.config;
 
 import com.vincevscode.cointracker.repository.CoinRepositoryInterface;
@@ -11,26 +11,24 @@ public class RepositoryFactory {
     }
 
     public static CoinRepositoryInterface createRepository() {
-        String repositoryType = System.getenv("COIN_TRACKER_REPOSITORY");
+        String repositoryTypeValue = System.getenv("COIN_TRACKER_REPOSITORY");
+        RepositoryType repositoryType = RepositoryType.fromEnvironmentValue(repositoryTypeValue);
 
-        if (repositoryType == null || repositoryType.isBlank()) {
-            System.out.println("COIN_TRACKER_REPOSITORY not set. Defaulting to in-memory repository.");
-            return new InMemoryCoinRepository();
+        switch (repositoryType) {
+            case POSTGRES:
+                System.out.println("Using PostgreSQL repository.");
+                return new PostgresCoinRepository();
+
+            case MEMORY:
+                if (repositoryTypeValue == null || repositoryTypeValue.isBlank()) {
+                    System.out.println("COIN_TRACKER_REPOSITORY not set. Defaulting to in-memory repository.");
+                } else {
+                    System.out.println("Using in-memory repository.");
+                }
+                return new InMemoryCoinRepository();
+
+            default:
+                throw new IllegalStateException("Unhandled repository type: " + repositoryType);
         }
-
-        if (repositoryType.equalsIgnoreCase("postgres")) {
-            System.out.println("Using PostgreSQL repository.");
-            return new PostgresCoinRepository();
-        }
-
-        if (repositoryType.equalsIgnoreCase("memory")) {
-            System.out.println("Using in-memory repository.");
-            return new InMemoryCoinRepository();
-        }
-
-        throw new IllegalStateException(
-                "Unsupported repository type: " + repositoryType +
-                        ". Use 'memory' or 'postgres'."
-        );
     }
 }
