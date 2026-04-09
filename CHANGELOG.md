@@ -3,13 +3,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
-## [0.2.6] - 2026-04-26 
+## [0.2.7] - YYYY-MM-DD - 2026-04-09 
 
 ### Added
-- `RepositoryType` enum for supported repository configuration values.
-
+- `CachedCoinRepository` wrapper as the structural base for future caching.
+- Support for `cached-memory` and `cached-postgres` repository types.
+- Basic ID-based caching in `CachedCoinRepository` for `findCoinById(int id)`.
+- Cache synchronization on add, update, and remove operations.
+- Tests for caching behavior and cache consistency after writes.
 ### Changed
-- `RepositoryFactory` now uses `RepositoryType` instead of raw string comparisons.
+- `RepositoryFactory` can now create cached repository wrappers.
 
 ### Removed
 - N/A
