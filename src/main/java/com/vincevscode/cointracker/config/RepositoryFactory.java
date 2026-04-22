@@ -1,4 +1,4 @@
-// v0.2.7: Factory for creating repository implementations from environment configuration.
+// v0.2.0: Factory for creating repository implementations from environment configuration.
 package com.vincevscode.cointracker.config;
 
 import com.vincevscode.cointracker.repository.CachedCoinRepository;
@@ -29,15 +29,43 @@ public class RepositoryFactory {
                 return new InMemoryCoinRepository();
 
             case CACHED_MEMORY:
-                System.out.println("Using cached in-memory repository.");
-                return new CachedCoinRepository(new InMemoryCoinRepository());
+                return createCachedMemoryRepository();
 
             case CACHED_POSTGRES:
-                System.out.println("Using cached PostgreSQL repository.");
-                return new CachedCoinRepository(new PostgresCoinRepository());
+                return createCachedPostgresRepository();
 
             default:
                 throw new IllegalStateException("Unhandled repository type: " + repositoryType);
         }
+    }
+
+    private static CoinRepositoryInterface createCachedMemoryRepository() {
+        CacheConfig cacheConfig = CacheConfig.fromEnvironment();
+
+        System.out.println(
+                "Using cached in-memory repository with " +
+                        cacheConfig.getCacheMode().name().toLowerCase() +
+                        " TTL mode (" + cacheConfig.getTtlMillis() + " ms)."
+        );
+
+        return new CachedCoinRepository(
+                new InMemoryCoinRepository(),
+                cacheConfig.getTtlMillis()
+        );
+    }
+
+    private static CoinRepositoryInterface createCachedPostgresRepository() {
+        CacheConfig cacheConfig = CacheConfig.fromEnvironment();
+
+        System.out.println(
+                "Using cached PostgreSQL repository with " +
+                        cacheConfig.getCacheMode().name().toLowerCase() +
+                        " TTL mode (" + cacheConfig.getTtlMillis() + " ms)."
+        );
+
+        return new CachedCoinRepository(
+                new PostgresCoinRepository(),
+                cacheConfig.getTtlMillis()
+        );
     }
 }

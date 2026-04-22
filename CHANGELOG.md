@@ -3,16 +3,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
-## [0.2.7] - YYYY-MM-DD - 2026-04-09 
+## [0.2.8] - YYYY-MM-DD - 2026-04-22 
 
 ### Added
-- `CachedCoinRepository` wrapper as the structural base for future caching.
-- Support for `cached-memory` and `cached-postgres` repository types.
-- Basic ID-based caching in `CachedCoinRepository` for `findCoinById(int id)`.
-- Cache synchronization on add, update, and remove operations.
-- Tests for caching behavior and cache consistency after writes.
+- `CacheMode` enum for predefined cache TTL profiles.
+- `CacheConfig` for loading cache mode from environment variables.
+
 ### Changed
-- `RepositoryFactory` can now create cached repository wrappers.
+- Cached repositories now use startup configuration instead of hardcoded TTL values.
+- Cache mode can now be selected through `COIN_TRACKER_CACHE_MODE`.
 
 ### Removed
 - N/A

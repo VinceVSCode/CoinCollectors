@@ -23,6 +23,23 @@ COIN_TRACKER_URL = YOUR_URL
 COIN_TRACKER_USERNAME = YOUR_USERNAME
 COIN_TRACKER_PASSWORD = YOUR_PASSWORD
 
+## Cache configuration
+
+Cached repository modes can use a predefined cache TTL mode through:
+
+- `COIN_TRACKER_CACHE_MODE`
+
+Supported values:
+- `short` → 15 seconds
+- `medium` → 60 seconds
+- `long` → 600 seconds
+
+Example:
+
+```text
+COIN_TRACKER_REPOSITORY=cached-postgres
+COIN_TRACKER_CACHE_MODE=medium
+
 ## Run
 ```bash
 mvn -q compile exec:java -Dexec.mainClass="com.vincevscode.cointracker.App"
