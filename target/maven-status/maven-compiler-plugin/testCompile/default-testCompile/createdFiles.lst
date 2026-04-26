@@ -1,4 +1,7 @@
 com\vincevscode\cointracker\AppTest.class
-com\vincevscode\cointracker\repository\InMemoryCoinRepositoryTest.class
-com\vincevscode\cointracker\model\CoinTest.class
+com\vincevscode\cointracker\model\CollectionEntryTest.class
+com\vincevscode\cointracker\model\UserTest.class
 com\vincevscode\cointracker\service\InMemoryCoinCatalogServiceTest.class
+com\vincevscode\cointracker\repository\InMemoryCoinRepositoryTest.class
+com\vincevscode\cointracker\repository\CachedCoinRepositoryTest.class
+com\vincevscode\cointracker\model\CoinTest.class

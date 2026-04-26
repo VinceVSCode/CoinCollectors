@@ -1,4 +1,8 @@
 C:\Users\User\Documents\GitHub\CoinCollectors\src\test\java\com\vincevscode\cointracker\AppTest.java
 C:\Users\User\Documents\GitHub\CoinCollectors\src\test\java\com\vincevscode\cointracker\model\CoinTest.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\test\java\com\vincevscode\cointracker\model\CollectionEntryTest.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\test\java\com\vincevscode\cointracker\model\UserTest.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\test\java\com\vincevscode\cointracker\repository\CachedCoinRepositoryTest.java
 C:\Users\User\Documents\GitHub\CoinCollectors\src\test\java\com\vincevscode\cointracker\repository\InMemoryCoinRepositoryTest.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\test\java\com\vincevscode\cointracker\repository\PostgresCoinRepositoryTest.java
 C:\Users\User\Documents\GitHub\CoinCollectors\src\test\java\com\vincevscode\cointracker\service\InMemoryCoinCatalogServiceTest.java

@@ -1,6 +1,17 @@
 C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\App.java
 C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\cli\CoinCatalogCli.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\config\CacheConfig.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\config\CacheMode.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\config\DatabaseConfig.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\config\RepositoryFactory.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\config\RepositoryType.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\db\DatabaseConnection.java
 C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\model\Coin.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\model\CollectionEntry.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\model\User.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\repository\CachedCoinEntry.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\repository\CachedCoinRepository.java
 C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\repository\CoinRepositoryInterface.java
 C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\repository\InMemoryCoinRepository.java
+C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\repository\PostgresCoinRepository.java
 C:\Users\User\Documents\GitHub\CoinCollectors\src\main\java\com\vincevscode\cointracker\service\CoinCatalogService.java

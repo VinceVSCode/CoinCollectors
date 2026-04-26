@@ -7,7 +7,7 @@
 
   <groupId>com.vincevscode</groupId>
   <artifactId>coin-tracker</artifactId>
-  <version>0.2.8</version>
+  <version>0.3.0</version>
   <name>coin-tracker</name>
 
   <properties>
