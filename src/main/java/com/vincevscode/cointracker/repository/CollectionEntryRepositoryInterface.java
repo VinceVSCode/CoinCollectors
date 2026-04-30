@@ -2,6 +2,8 @@
 package com.vincevscode.cointracker.repository;
 
 import com.vincevscode.cointracker.model.CollectionEntry;
+import com.vincevscode.cointracker.view.MissingCoinView;
+import com.vincevscode.cointracker.view.OwnedCoinView;
 
 import java.util.List;
 
@@ -15,4 +17,8 @@ public interface CollectionEntryRepositoryInterface {
     CollectionEntry findCollectionEntryByUserIdAndCoinId(int userId, int coinId);
 
     boolean updateCollectionEntry(CollectionEntry updatedCollectionEntry);
+
+    List<OwnedCoinView> getOwnedCoinsForUser(int userId);
+
+    List<MissingCoinView> getMissingCoinsForUser(int userId);
 }

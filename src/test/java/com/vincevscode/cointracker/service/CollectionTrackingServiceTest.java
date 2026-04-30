@@ -4,12 +4,15 @@ package com.vincevscode.cointracker.service;
 import com.vincevscode.cointracker.db.DatabaseConnection;
 import com.vincevscode.cointracker.model.CollectionEntry;
 import com.vincevscode.cointracker.repository.PostgresCollectionEntryRepository;
+import com.vincevscode.cointracker.view.MissingCoinView;
+import com.vincevscode.cointracker.view.OwnedCoinView;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,20 +59,36 @@ class CollectionTrackingServiceTest {
         assertEquals("Quantity cannot be negative.", exception.getMessage());
     }
 
+    @Test
+    void getOwnedCoinsForUser_shouldReturnOnlyOwnedCoins() {
+        service.setCoinQuantity(1, 1, 1, 2);
+        service.setCoinQuantity(2, 1, 2, 0);
+
+        List<OwnedCoinView> ownedCoins = service.getOwnedCoinsForUser(1);
+
+        assertEquals(1, ownedCoins.size());
+        assertEquals(
+                new OwnedCoinView(1, "Bulgaria", "1 Lev", 2002, 2),
+                ownedCoins.get(0)
+        );
+    }
+
     private void seedRequiredData() {
         String insertUserSql = """
                 INSERT INTO users (id, username)
                 VALUES (1, 'vince')
                 """;
 
-        String insertCoinSql = """
+        String insertCoinsSql = """
                 INSERT INTO coins (id, country, denomination, year)
-                VALUES (1, 'Bulgaria', '1 Lev', 2002)
+                VALUES
+                    (1, 'Bulgaria', '1 Lev', 2002),
+                    (2, 'Germany', '1 Euro', 2010)
                 """;
 
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement userStatement = connection.prepareStatement(insertUserSql);
-             PreparedStatement coinStatement = connection.prepareStatement(insertCoinSql)) {
+             PreparedStatement coinStatement = connection.prepareStatement(insertCoinsSql)) {
 
             userStatement.executeUpdate();
             coinStatement.executeUpdate();
@@ -116,5 +135,19 @@ class CollectionTrackingServiceTest {
         } catch (SQLException exception) {
             throw new RuntimeException("Failed to clear coins table before test.", exception);
         }
+    }
+
+    @Test
+    void getMissingCoinsForUser_shouldReturnMissingCoins() {
+        service.setCoinQuantity(1, 1, 1, 2);
+        service.setCoinQuantity(2, 1, 2, 0);
+
+        List<MissingCoinView> missingCoins = service.getMissingCoinsForUser(1);
+
+        assertEquals(1, missingCoins.size());
+        assertEquals(
+                new MissingCoinView(2, "Germany", "1 Euro", 2010),
+                missingCoins.get(0)
+        );
     }
 }

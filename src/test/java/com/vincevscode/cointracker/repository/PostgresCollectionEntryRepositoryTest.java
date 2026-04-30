@@ -3,6 +3,8 @@ package com.vincevscode.cointracker.repository;
 
 import com.vincevscode.cointracker.db.DatabaseConnection;
 import com.vincevscode.cointracker.model.CollectionEntry;
+import com.vincevscode.cointracker.view.MissingCoinView;
+import com.vincevscode.cointracker.view.OwnedCoinView;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -81,6 +83,30 @@ class PostgresCollectionEntryRepositoryTest {
         assertNull(foundEntry);
     }
 
+    @Test
+    void updateCollectionEntry_shouldReturnTrueWhenEntryExists() {
+        repository.addCollectionEntry(new CollectionEntry(1, 1, 1, 2));
+
+        boolean updated = repository.updateCollectionEntry(new CollectionEntry(1, 1, 1, 5));
+
+        assertEquals(true, updated);
+        assertEquals(new CollectionEntry(1, 1, 1, 5), repository.findCollectionEntryById(1));
+    }
+
+    @Test
+    void getOwnedCoinsForUser_shouldReturnOnlyCoinsWithPositiveQuantity() {
+        repository.addCollectionEntry(new CollectionEntry(1, 1, 1, 2));
+        repository.addCollectionEntry(new CollectionEntry(2, 1, 2, 0));
+
+        List<OwnedCoinView> ownedCoins = repository.getOwnedCoinsForUser(1);
+
+        assertEquals(1, ownedCoins.size());
+        assertEquals(
+                new OwnedCoinView(1, "Bulgaria", "1 Lev", 2002, 2),
+                ownedCoins.get(0)
+        );
+    }
+
     private void seedRequiredData() {
         String insertUserSql = """
                 INSERT INTO users (id, username)
@@ -143,5 +169,32 @@ class PostgresCollectionEntryRepositoryTest {
         } catch (SQLException exception) {
             throw new RuntimeException("Failed to clear coins table before test.", exception);
         }
+    }
+
+    @Test
+    void getMissingCoinsForUser_shouldReturnCoinsWithoutEntry() {
+        repository.addCollectionEntry(new CollectionEntry(1, 1, 1, 2));
+
+        List<MissingCoinView> missingCoins = repository.getMissingCoinsForUser(1);
+
+        assertEquals(1, missingCoins.size());
+        assertEquals(
+                new MissingCoinView(2, "Germany", "1 Euro", 2010),
+                missingCoins.get(0)
+        );
+    }
+
+    @Test
+    void getMissingCoinsForUser_shouldReturnCoinsWithZeroQuantity() {
+        repository.addCollectionEntry(new CollectionEntry(1, 1, 1, 2));
+        repository.addCollectionEntry(new CollectionEntry(2, 1, 2, 0));
+
+        List<MissingCoinView> missingCoins = repository.getMissingCoinsForUser(1);
+
+        assertEquals(1, missingCoins.size());
+        assertEquals(
+                new MissingCoinView(2, "Germany", "1 Euro", 2010),
+                missingCoins.get(0)
+        );
     }
 }

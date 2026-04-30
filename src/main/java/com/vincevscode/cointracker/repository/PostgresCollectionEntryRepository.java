@@ -3,6 +3,8 @@ package com.vincevscode.cointracker.repository;
 
 import com.vincevscode.cointracker.db.DatabaseConnection;
 import com.vincevscode.cointracker.model.CollectionEntry;
+import com.vincevscode.cointracker.view.MissingCoinView;
+import com.vincevscode.cointracker.view.OwnedCoinView;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -151,5 +153,88 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
         } catch (SQLException exception) {
             throw new RuntimeException("Failed to update collection entry in PostgreSQL.", exception);
         }
+    }
+
+    @Override
+    public List<OwnedCoinView> getOwnedCoinsForUser(int userId) {
+        String sql = """
+                SELECT c.id AS coin_id, c.country, c.denomination, c.year, ce.quantity
+                FROM collection_entries ce
+                JOIN coins c ON ce.coin_id = c.id
+                WHERE ce.user_id = ? AND ce.quantity > 0
+                ORDER BY c.id
+                """;
+
+        List<OwnedCoinView> ownedCoins = new ArrayList<>();
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setInt(1, userId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    int coinId = resultSet.getInt("coin_id");
+                    String country = resultSet.getString("country");
+                    String denomination = resultSet.getString("denomination");
+                    int year = resultSet.getInt("year");
+                    int quantity = resultSet.getInt("quantity");
+
+                    ownedCoins.add(new OwnedCoinView(
+                            coinId,
+                            country,
+                            denomination,
+                            year,
+                            quantity
+                    ));
+                }
+            }
+
+        } catch (SQLException exception) {
+            throw new RuntimeException("Failed to retrieve owned coins for user from PostgreSQL.", exception);
+        }
+
+        return ownedCoins;
+    }
+
+    @Override
+    public List<MissingCoinView> getMissingCoinsForUser(int userId) {
+        String sql = """
+                SELECT c.id AS coin_id, c.country, c.denomination, c.year
+                FROM coins c
+                LEFT JOIN collection_entries ce
+                    ON c.id = ce.coin_id AND ce.user_id = ?
+                WHERE ce.id IS NULL OR ce.quantity = 0
+                ORDER BY c.id
+                """;
+
+        List<MissingCoinView> missingCoins = new ArrayList<>();
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.setInt(1, userId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    int coinId = resultSet.getInt("coin_id");
+                    String country = resultSet.getString("country");
+                    String denomination = resultSet.getString("denomination");
+                    int year = resultSet.getInt("year");
+
+                    missingCoins.add(new MissingCoinView(
+                            coinId,
+                            country,
+                            denomination,
+                            year
+                    ));
+                }
+            }
+
+        } catch (SQLException exception) {
+            throw new RuntimeException("Failed to retrieve missing coins for user from PostgreSQL.", exception);
+        }
+
+        return missingCoins;
     }
 }
