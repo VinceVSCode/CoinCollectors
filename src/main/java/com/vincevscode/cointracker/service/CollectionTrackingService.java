@@ -2,6 +2,7 @@
 package com.vincevscode.cointracker.service;
 
 import com.vincevscode.cointracker.model.CollectionEntry;
+import com.vincevscode.cointracker.query.OwnedCoinFilter;
 import com.vincevscode.cointracker.repository.CollectionEntryRepositoryInterface;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
@@ -50,6 +51,13 @@ public class CollectionTrackingService {
         return collectionEntryRepository.getOwnedCoinsForUser(userId);
     }
 
+    public List<OwnedCoinView> getOwnedCoinsForUser(int userId, OwnedCoinFilter filter) {
+        validateUserId(userId);
+        validateOwnedCoinFilter(filter);
+
+        return collectionEntryRepository.getOwnedCoinsForUser(userId, filter);
+    }
+
     public List<MissingCoinView> getMissingCoinsForUser(int userId) {
         validateUserId(userId);
 
@@ -80,4 +88,30 @@ public class CollectionTrackingService {
             throw new IllegalArgumentException("Coin ID must be greater than 0.");
         }
     }
+
+    private void validateOwnedCoinFilter(OwnedCoinFilter filter) {
+        if (filter == null) {
+            return;
+        }
+
+        if (filter.getMinYear() != null && filter.getMinYear() <= 0) {
+            throw new IllegalArgumentException("Minimum year must be greater than 0.");
+        }
+
+        if (filter.getMaxYear() != null && filter.getMaxYear() <= 0) {
+            throw new IllegalArgumentException("Maximum year must be greater than 0.");
+        }
+
+        if (filter.getMinYear() != null
+                && filter.getMaxYear() != null
+                && filter.getMinYear() > filter.getMaxYear()) {
+            throw new IllegalArgumentException("Minimum year cannot be greater than maximum year.");
+        }
+
+        if (filter.getMinQuantity() != null && filter.getMinQuantity() < 0) {
+            throw new IllegalArgumentException("Minimum quantity cannot be negative.");
+        }
+    }
+
+
 }

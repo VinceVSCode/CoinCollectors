@@ -2,6 +2,7 @@
 package com.vincevscode.cointracker.repository;
 
 import com.vincevscode.cointracker.model.CollectionEntry;
+import com.vincevscode.cointracker.query.OwnedCoinFilter;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
 
@@ -19,6 +20,8 @@ public interface CollectionEntryRepositoryInterface {
     boolean updateCollectionEntry(CollectionEntry updatedCollectionEntry);
 
     List<OwnedCoinView> getOwnedCoinsForUser(int userId);
+
+    List<OwnedCoinView> getOwnedCoinsForUser(int userId, OwnedCoinFilter filter);
 
     List<MissingCoinView> getMissingCoinsForUser(int userId);
 }

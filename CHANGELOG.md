@@ -6,16 +6,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 ## [0.3.2] - YYYY-MM-DD - 2026-05-30 
 
 ### Added
-- `OwnedCoinView` for frontend-friendly owned coin query results.
-- `getOwnedCoinsForUser(int userId)` in the collection entry repository and collection tracking service.
-- PostgreSQL-backed integration tests for owned coin query behavior.
-- `MissingCoinView` for frontend-friendly missing coin query results.
-- `getMissingCoinsForUser(int userId)` in the collection entry repository and collection tracking service.
-- PostgreSQL-backed integration tests for missing coin query behavior.
+- `OwnedCoinFilter` for screen-oriented owned coin filtering.
+- Filtered owned coin query support by country, denomination, year range, and minimum quantity.
 
 ### Changed
-- Ownership tracking now includes a joined query shaped for future UI screens.
-- Ownership tracking now supports both owned and missing coin screen queries.
+- Owned coin queries are now shaped for future filterable frontend screens.
+
 ### Removed
 - N/A
 

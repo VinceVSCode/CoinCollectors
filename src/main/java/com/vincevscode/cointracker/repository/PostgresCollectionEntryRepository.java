@@ -3,6 +3,7 @@ package com.vincevscode.cointracker.repository;
 
 import com.vincevscode.cointracker.db.DatabaseConnection;
 import com.vincevscode.cointracker.model.CollectionEntry;
+import com.vincevscode.cointracker.query.OwnedCoinFilter;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
 
@@ -157,20 +158,56 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
 
     @Override
     public List<OwnedCoinView> getOwnedCoinsForUser(int userId) {
-        String sql = """
+        return getOwnedCoinsForUser(userId, null);
+    }
+
+    @Override
+    public List<OwnedCoinView> getOwnedCoinsForUser(int userId, OwnedCoinFilter filter) {
+        StringBuilder sqlBuilder = new StringBuilder("""
                 SELECT c.id AS coin_id, c.country, c.denomination, c.year, ce.quantity
                 FROM collection_entries ce
                 JOIN coins c ON ce.coin_id = c.id
                 WHERE ce.user_id = ? AND ce.quantity > 0
-                ORDER BY c.id
-                """;
+                """);
+
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(userId);
+
+        if (filter != null) {
+            if (filter.getCountry() != null && !filter.getCountry().isBlank()) {
+                sqlBuilder.append(" AND c.country = ?");
+                parameters.add(filter.getCountry());
+            }
+
+            if (filter.getDenomination() != null && !filter.getDenomination().isBlank()) {
+                sqlBuilder.append(" AND c.denomination = ?");
+                parameters.add(filter.getDenomination());
+            }
+
+            if (filter.getMinYear() != null) {
+                sqlBuilder.append(" AND c.year >= ?");
+                parameters.add(filter.getMinYear());
+            }
+
+            if (filter.getMaxYear() != null) {
+                sqlBuilder.append(" AND c.year <= ?");
+                parameters.add(filter.getMaxYear());
+            }
+
+            if (filter.getMinQuantity() != null) {
+                sqlBuilder.append(" AND ce.quantity >= ?");
+                parameters.add(filter.getMinQuantity());
+            }
+        }
+
+        sqlBuilder.append(" ORDER BY c.id");
 
         List<OwnedCoinView> ownedCoins = new ArrayList<>();
 
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sqlBuilder.toString())) {
 
-            statement.setInt(1, userId);
+            bindParameters(statement, parameters);
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
@@ -236,5 +273,19 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
         }
 
         return missingCoins;
+    }
+
+    private void bindParameters(PreparedStatement statement, List<Object> parameters) throws SQLException {
+        for (int index = 0; index < parameters.size(); index++) {
+            Object parameter = parameters.get(index);
+
+            if (parameter instanceof Integer) {
+                statement.setInt(index + 1, (Integer) parameter);
+            } else if (parameter instanceof String) {
+                statement.setString(index + 1, (String) parameter);
+            } else {
+                throw new IllegalArgumentException("Unsupported SQL parameter type: " + parameter.getClass());
+            }
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.vincevscode.cointracker.service;
 
 import com.vincevscode.cointracker.db.DatabaseConnection;
 import com.vincevscode.cointracker.model.CollectionEntry;
+import com.vincevscode.cointracker.query.OwnedCoinFilter;
 import com.vincevscode.cointracker.repository.PostgresCollectionEntryRepository;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
@@ -149,5 +150,49 @@ class CollectionTrackingServiceTest {
                 new MissingCoinView(2, "Germany", "1 Euro", 2010),
                 missingCoins.get(0)
         );
+    }
+
+    @Test
+    void getOwnedCoinsForUser_shouldFilterByCountry() {
+        service.setCoinQuantity(1, 1, 1, 2);
+        service.setCoinQuantity(2, 1, 2, 1);
+
+        OwnedCoinFilter filter = new OwnedCoinFilter("Bulgaria", null, null, null, null);
+
+        List<OwnedCoinView> ownedCoins = service.getOwnedCoinsForUser(1, filter);
+
+        assertEquals(1, ownedCoins.size());
+        assertEquals(
+                new OwnedCoinView(1, "Bulgaria", "1 Lev", 2002, 2),
+                ownedCoins.get(0)
+        );
+    }
+
+    @Test
+    void getOwnedCoinsForUser_shouldFilterByMinimumQuantity() {
+        service.setCoinQuantity(1, 1, 1, 2);
+        service.setCoinQuantity(2, 1, 2, 1);
+
+        OwnedCoinFilter filter = new OwnedCoinFilter(null, null, null, null, 2);
+
+        List<OwnedCoinView> ownedCoins = service.getOwnedCoinsForUser(1, filter);
+
+        assertEquals(1, ownedCoins.size());
+        assertEquals(
+                new OwnedCoinView(1, "Bulgaria", "1 Lev", 2002, 2),
+                ownedCoins.get(0)
+        );
+    }
+
+    @Test
+    void getOwnedCoinsForUser_shouldThrowExceptionWhenYearRangeIsInvalid() {
+        OwnedCoinFilter filter = new OwnedCoinFilter(null, null, 2020, 2000, null);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.getOwnedCoinsForUser(1, filter)
+        );
+
+        assertEquals("Minimum year cannot be greater than maximum year.", exception.getMessage());
     }
 }
