@@ -2,11 +2,14 @@
 package com.vincevscode.cointracker.service;
 
 import com.vincevscode.cointracker.model.CollectionEntry;
+import com.vincevscode.cointracker.query.MissingCoinFilter;
 import com.vincevscode.cointracker.query.OwnedCoinFilter;
 import com.vincevscode.cointracker.repository.CollectionEntryRepositoryInterface;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
-
+import com.vincevscode.cointracker.query.MissingCoinQuery;
+import com.vincevscode.cointracker.query.OwnedCoinQuery;
+import com.vincevscode.cointracker.query.PageRequest;
 import java.util.List;
 
 public class CollectionTrackingService {
@@ -64,6 +67,33 @@ public class CollectionTrackingService {
         return collectionEntryRepository.getMissingCoinsForUser(userId);
     }
 
+    public List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinFilter filter) {
+        validateUserId(userId);
+        validateMissingCoinFilter(filter);
+
+        return collectionEntryRepository.getMissingCoinsForUser(userId, filter);
+    }
+
+    private void validateMissingCoinFilter(MissingCoinFilter filter) {
+        if (filter == null) {
+            return;
+        }
+
+        if (filter.getMinYear() != null && filter.getMinYear() <= 0) {
+            throw new IllegalArgumentException("Minimum year must be greater than 0.");
+        }
+
+        if (filter.getMaxYear() != null && filter.getMaxYear() <= 0) {
+            throw new IllegalArgumentException("Maximum year must be greater than 0.");
+        }
+
+        if (filter.getMinYear() != null
+                && filter.getMaxYear() != null
+                && filter.getMinYear() > filter.getMaxYear()) {
+            throw new IllegalArgumentException("Minimum year cannot be greater than maximum year.");
+        }
+    }
+
     private void validateIdsAndQuantity(int entryId, int userId, int coinId, int quantity) {
         if (entryId <= 0) {
             throw new IllegalArgumentException("Collection entry ID must be greater than 0.");
@@ -113,5 +143,50 @@ public class CollectionTrackingService {
         }
     }
 
+    public List<OwnedCoinView> getOwnedCoinsForUser(int userId, OwnedCoinQuery query) {
+        validateUserId(userId);
+        validateOwnedCoinQuery(query);
+
+        return collectionEntryRepository.getOwnedCoinsForUser(userId, query);
+    }
+
+    public List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinQuery query) {
+        validateUserId(userId);
+        validateMissingCoinQuery(query);
+
+        return collectionEntryRepository.getMissingCoinsForUser(userId, query);
+    }
+
+    private void validateOwnedCoinQuery(OwnedCoinQuery query) {
+        if (query == null) {
+            return;
+        }
+
+        validateOwnedCoinFilter(query.getFilter());
+        validatePageRequest(query.getPageRequest());
+    }
+
+    private void validateMissingCoinQuery(MissingCoinQuery query) {
+        if (query == null) {
+            return;
+        }
+
+        validateMissingCoinFilter(query.getFilter());
+        validatePageRequest(query.getPageRequest());
+    }
+
+    private void validatePageRequest(PageRequest pageRequest) {
+        if (pageRequest == null) {
+            return;
+        }
+
+        if (pageRequest.getPageNumber() <= 0) {
+            throw new IllegalArgumentException("Page number must be greater than 0.");
+        }
+
+        if (pageRequest.getPageSize() <= 0) {
+            throw new IllegalArgumentException("Page size must be greater than 0.");
+        }
+    }
 
 }

@@ -3,10 +3,18 @@ package com.vincevscode.cointracker.service;
 
 import com.vincevscode.cointracker.db.DatabaseConnection;
 import com.vincevscode.cointracker.model.CollectionEntry;
+import com.vincevscode.cointracker.query.MissingCoinFilter;
 import com.vincevscode.cointracker.query.OwnedCoinFilter;
 import com.vincevscode.cointracker.repository.PostgresCollectionEntryRepository;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
+import com.vincevscode.cointracker.query.MissingCoinQuery;
+import com.vincevscode.cointracker.query.MissingCoinSortField;
+import com.vincevscode.cointracker.query.OwnedCoinQuery;
+import com.vincevscode.cointracker.query.OwnedCoinSortField;
+import com.vincevscode.cointracker.query.PageRequest;
+import com.vincevscode.cointracker.query.SortDirection;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -194,5 +202,140 @@ class CollectionTrackingServiceTest {
         );
 
         assertEquals("Minimum year cannot be greater than maximum year.", exception.getMessage());
+    }
+
+    @Test
+    void getMissingCoinsForUser_shouldFilterByCountry() {
+        service.setCoinQuantity(1, 1, 1, 2);
+        service.setCoinQuantity(2, 1, 2, 0);
+
+        MissingCoinFilter filter = new MissingCoinFilter("Germany", null, null, null);
+
+        List<MissingCoinView> missingCoins = service.getMissingCoinsForUser(1, filter);
+
+        assertEquals(1, missingCoins.size());
+        assertEquals(
+                new MissingCoinView(2, "Germany", "1 Euro", 2010),
+                missingCoins.get(0)
+        );
+    }
+
+    @Test
+    void getMissingCoinsForUser_shouldFilterByYearRange() {
+        service.setCoinQuantity(1, 1, 1, 0);
+        service.setCoinQuantity(2, 1, 2, 0);
+
+        MissingCoinFilter filter = new MissingCoinFilter(null, null, 2005, 2015);
+
+        List<MissingCoinView> missingCoins = service.getMissingCoinsForUser(1, filter);
+
+        assertEquals(1, missingCoins.size());
+        assertEquals(
+                new MissingCoinView(2, "Germany", "1 Euro", 2010),
+                missingCoins.get(0)
+        );
+    }
+
+    @Test
+    void getMissingCoinsForUser_shouldThrowExceptionWhenYearRangeIsInvalid() {
+        MissingCoinFilter filter = new MissingCoinFilter(null, null, 2020, 2000);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.getMissingCoinsForUser(1, filter)
+        );
+
+        assertEquals("Minimum year cannot be greater than maximum year.", exception.getMessage());
+    }
+
+    @Test
+    void getOwnedCoinsForUser_shouldSortByYearDescending() {
+        service.setCoinQuantity(1, 1, 1, 2);
+        service.setCoinQuantity(2, 1, 2, 1);
+
+        OwnedCoinQuery query = new OwnedCoinQuery(
+                null,
+                OwnedCoinSortField.YEAR,
+                SortDirection.DESC,
+                null
+        );
+
+        List<OwnedCoinView> ownedCoins = service.getOwnedCoinsForUser(1, query);
+
+        assertEquals(2, ownedCoins.size());
+        assertEquals(new OwnedCoinView(2, "Germany", "1 Euro", 2010, 1), ownedCoins.get(0));
+        assertEquals(new OwnedCoinView(1, "Bulgaria", "1 Lev", 2002, 2), ownedCoins.get(1));
+    }
+
+    @Test
+    void getOwnedCoinsForUser_shouldApplyPagination() {
+        service.setCoinQuantity(1, 1, 1, 2);
+        service.setCoinQuantity(2, 1, 2, 1);
+
+        OwnedCoinQuery query = new OwnedCoinQuery(
+                null,
+                OwnedCoinSortField.COIN_ID,
+                SortDirection.ASC,
+                new PageRequest(2, 1)
+        );
+
+        List<OwnedCoinView> ownedCoins = service.getOwnedCoinsForUser(1, query);
+
+        assertEquals(1, ownedCoins.size());
+        assertEquals(new OwnedCoinView(2, "Germany", "1 Euro", 2010, 1), ownedCoins.get(0));
+    }
+
+    @Test
+    void getMissingCoinsForUser_shouldSortByYearDescending() {
+        service.setCoinQuantity(1, 1, 1, 0);
+        service.setCoinQuantity(2, 1, 2, 0);
+
+        MissingCoinQuery query = new MissingCoinQuery(
+                null,
+                MissingCoinSortField.YEAR,
+                SortDirection.DESC,
+                null
+        );
+
+        List<MissingCoinView> missingCoins = service.getMissingCoinsForUser(1, query);
+
+        assertEquals(2, missingCoins.size());
+        assertEquals(new MissingCoinView(2, "Germany", "1 Euro", 2010), missingCoins.get(0));
+        assertEquals(new MissingCoinView(1, "Bulgaria", "1 Lev", 2002), missingCoins.get(1));
+    }
+
+    @Test
+    void getMissingCoinsForUser_shouldApplyPagination() {
+        service.setCoinQuantity(1, 1, 1, 0);
+        service.setCoinQuantity(2, 1, 2, 0);
+
+        MissingCoinQuery query = new MissingCoinQuery(
+                null,
+                MissingCoinSortField.COIN_ID,
+                SortDirection.ASC,
+                new PageRequest(2, 1)
+        );
+
+        List<MissingCoinView> missingCoins = service.getMissingCoinsForUser(1, query);
+
+        assertEquals(1, missingCoins.size());
+        assertEquals(new MissingCoinView(2, "Germany", "1 Euro", 2010), missingCoins.get(0));
+    }
+
+    @Test
+    void getOwnedCoinsForUser_shouldThrowExceptionWhenPageNumberIsInvalid() {
+        OwnedCoinQuery query = new OwnedCoinQuery(
+                null,
+                OwnedCoinSortField.COIN_ID,
+                SortDirection.ASC,
+                new PageRequest(0, 10)
+        );
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.getOwnedCoinsForUser(1, query)
+        );
+
+        assertEquals("Page number must be greater than 0.", exception.getMessage());
     }
 }

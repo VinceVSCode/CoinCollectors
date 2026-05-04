@@ -3,7 +3,10 @@ package com.vincevscode.cointracker.repository;
 
 import com.vincevscode.cointracker.db.DatabaseConnection;
 import com.vincevscode.cointracker.model.CollectionEntry;
+import com.vincevscode.cointracker.query.MissingCoinFilter;
+import com.vincevscode.cointracker.query.MissingCoinQuery;
 import com.vincevscode.cointracker.query.OwnedCoinFilter;
+import com.vincevscode.cointracker.query.OwnedCoinQuery;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
 
@@ -158,21 +161,28 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
 
     @Override
     public List<OwnedCoinView> getOwnedCoinsForUser(int userId) {
-        return getOwnedCoinsForUser(userId, null);
+        return getOwnedCoinsForUser(userId, (OwnedCoinQuery) null);
     }
 
     @Override
     public List<OwnedCoinView> getOwnedCoinsForUser(int userId, OwnedCoinFilter filter) {
+        OwnedCoinQuery query = new OwnedCoinQuery(filter, null, null, null);
+        return getOwnedCoinsForUser(userId, query);
+    }
+
+    @Override
+    public List<OwnedCoinView> getOwnedCoinsForUser(int userId, OwnedCoinQuery query) {
         StringBuilder sqlBuilder = new StringBuilder("""
-                SELECT c.id AS coin_id, c.country, c.denomination, c.year, ce.quantity
-                FROM collection_entries ce
-                JOIN coins c ON ce.coin_id = c.id
-                WHERE ce.user_id = ? AND ce.quantity > 0
-                """);
+            SELECT c.id AS coin_id, c.country, c.denomination, c.year, ce.quantity
+            FROM collection_entries ce
+            JOIN coins c ON ce.coin_id = c.id
+            WHERE ce.user_id = ? AND ce.quantity > 0
+            """);
 
         List<Object> parameters = new ArrayList<>();
         parameters.add(userId);
 
+        OwnedCoinFilter filter = query != null ? query.getFilter() : null;
         if (filter != null) {
             if (filter.getCountry() != null && !filter.getCountry().isBlank()) {
                 sqlBuilder.append(" AND c.country = ?");
@@ -200,7 +210,24 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
             }
         }
 
-        sqlBuilder.append(" ORDER BY c.id");
+        String sortField = "c.id";
+        String sortDirection = "ASC";
+
+        if (query != null && query.getSortField() != null) {
+            sortField = query.getSortField().getSqlExpression();
+        }
+
+        if (query != null && query.getSortDirection() != null) {
+            sortDirection = query.getSortDirection().name();
+        }
+
+        sqlBuilder.append(" ORDER BY ").append(sortField).append(" ").append(sortDirection);
+
+        if (query != null && query.getPageRequest() != null) {
+            sqlBuilder.append(" LIMIT ? OFFSET ?");
+            parameters.add(query.getPageRequest().getPageSize());
+            parameters.add(query.getPageRequest().getOffset());
+        }
 
         List<OwnedCoinView> ownedCoins = new ArrayList<>();
 
@@ -236,21 +263,76 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
 
     @Override
     public List<MissingCoinView> getMissingCoinsForUser(int userId) {
-        String sql = """
-                SELECT c.id AS coin_id, c.country, c.denomination, c.year
-                FROM coins c
-                LEFT JOIN collection_entries ce
-                    ON c.id = ce.coin_id AND ce.user_id = ?
-                WHERE ce.id IS NULL OR ce.quantity = 0
-                ORDER BY c.id
-                """;
+        return getMissingCoinsForUser(userId, (MissingCoinQuery) null);
+    }
+
+    @Override
+    public List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinFilter filter) {
+        MissingCoinQuery query = new MissingCoinQuery(filter, null, null, null);
+        return getMissingCoinsForUser(userId, query);
+    }
+
+    @Override
+    public List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinQuery query) {
+        StringBuilder sqlBuilder = new StringBuilder("""
+            SELECT c.id AS coin_id, c.country, c.denomination, c.year
+            FROM coins c
+            LEFT JOIN collection_entries ce
+                ON c.id = ce.coin_id AND ce.user_id = ?
+            WHERE ce.id IS NULL OR ce.quantity = 0
+            """);
+
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(userId);
+
+        MissingCoinFilter filter = query != null ? query.getFilter() : null;
+        if (filter != null) {
+            if (filter.getCountry() != null && !filter.getCountry().isBlank()) {
+                sqlBuilder.append(" AND c.country = ?");
+                parameters.add(filter.getCountry());
+            }
+
+            if (filter.getDenomination() != null && !filter.getDenomination().isBlank()) {
+                sqlBuilder.append(" AND c.denomination = ?");
+                parameters.add(filter.getDenomination());
+            }
+
+            if (filter.getMinYear() != null) {
+                sqlBuilder.append(" AND c.year >= ?");
+                parameters.add(filter.getMinYear());
+            }
+
+            if (filter.getMaxYear() != null) {
+                sqlBuilder.append(" AND c.year <= ?");
+                parameters.add(filter.getMaxYear());
+            }
+        }
+
+        String sortField = "c.id";
+        String sortDirection = "ASC";
+
+        if (query != null && query.getSortField() != null) {
+            sortField = query.getSortField().getSqlExpression();
+        }
+
+        if (query != null && query.getSortDirection() != null) {
+            sortDirection = query.getSortDirection().name();
+        }
+
+        sqlBuilder.append(" ORDER BY ").append(sortField).append(" ").append(sortDirection);
+
+        if (query != null && query.getPageRequest() != null) {
+            sqlBuilder.append(" LIMIT ? OFFSET ?");
+            parameters.add(query.getPageRequest().getPageSize());
+            parameters.add(query.getPageRequest().getOffset());
+        }
 
         List<MissingCoinView> missingCoins = new ArrayList<>();
 
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+             PreparedStatement statement = connection.prepareStatement(sqlBuilder.toString())) {
 
-            statement.setInt(1, userId);
+            bindParameters(statement, parameters);
 
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
