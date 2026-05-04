@@ -6,15 +6,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 ## [0.3.3] - YYYY-MM-DD - 2026-05-04 
 
 ### Added
-- `MissingCoinFilter` for screen-oriented missing coin filtering.
-- Filtered missing coin query support by country, denomination, and year range.
-- `SortDirection`, `PageRequest`, `OwnedCoinSortField`, and `MissingCoinSortField`.
-- `OwnedCoinQuery` and `MissingCoinQuery` for screen-oriented sorting and pagination.
-- Sorting and pagination support for owned and missing coin queries.
+- `001_ensure_schema.sql` to create required tables if they do not already exist.
+- `reset_data.sql` to clear application data in foreign-key-safe order.
+- `seed_data.sql` to populate sample users, coins, and collection entries.
 
 ### Changed
-- Missing coin queries are now shaped for future filterable frontend screens.
-- Collection screen queries are now structured for frontend-friendly filtering, sorting, and paging.
+
 
 ### Removed
 - N/A
