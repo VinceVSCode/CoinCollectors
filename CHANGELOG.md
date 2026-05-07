@@ -6,13 +6,12 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 ## [0.4.0] - YYYY-MM-DD - 2026-05-07 
 
 ### Added
-- Database-generated IDs for `collection_entries` through PostgreSQL sequence-backed defaults.
-- Spring-managed JDBC configuration for transactional collection write operations.
+- Controller tests for collection query endpoints.
+- Controller tests for collection write endpoint.
+- REST handling for invalid or missing JSON request bodies.
 
 ### Changed
-- Collection entry creation no longer uses manual ID generation.
-- `CollectionTrackingService` now uses transactional write methods and returns the server-controlled persisted entry.
-- Collection write API no longer depends on backend-generated IDs from the client side.
+- HTTP layer now has automated test coverage for core collection read/write flows.
 
 ### Removed
 - N/A
