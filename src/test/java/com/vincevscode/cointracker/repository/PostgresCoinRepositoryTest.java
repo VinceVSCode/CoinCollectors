@@ -1,4 +1,4 @@
-// v0.2.0: Integration tests for PostgreSQL-backed coin repository behavior.
+// v0.4.0: Integration tests for PostgreSQL-backed coin repository behavior.
 package com.vincevscode.cointracker.repository;
 
 import com.vincevscode.cointracker.db.DatabaseConnection;
@@ -22,6 +22,7 @@ class PostgresCoinRepositoryTest {
     @BeforeEach
     void setUp() {
         repository = new PostgresCoinRepository();
+        clearCollectionEntriesTable();
         clearCoinsTable();
     }
 
@@ -96,6 +97,19 @@ class PostgresCoinRepositoryTest {
         boolean removed = repository.removeCoinById(999);
 
         assertFalse(removed);
+    }
+
+    private void clearCollectionEntriesTable() {
+        String sql = "DELETE FROM collection_entries";
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            statement.executeUpdate();
+
+        } catch (SQLException exception) {
+            throw new RuntimeException("Failed to clear collection_entries table before test.", exception);
+        }
     }
 
     private void clearCoinsTable() {

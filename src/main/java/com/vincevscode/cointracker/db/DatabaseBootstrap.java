@@ -36,7 +36,7 @@ public class DatabaseBootstrap {
 
         Flyway flyway = Flyway.configure()
                 .dataSource(config.getUrl(), config.getUsername(), config.getPassword())
-                .locations("src/main/resources/db/migration/V1__initial_schema.sql")
+                .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
                 .load();
 

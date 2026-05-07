@@ -1,28 +1,35 @@
-// v0.3.0: Integration tests for PostgreSQL-backed collection entry repository behavior.
+// v0.4.0: Integration tests for PostgreSQL-backed collection entry repository behavior.
 package com.vincevscode.cointracker.repository;
 
-import com.vincevscode.cointracker.db.DatabaseConnection;
+import com.vincevscode.cointracker.config.DatabaseConfig;
 import com.vincevscode.cointracker.model.CollectionEntry;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PostgresCollectionEntryRepositoryTest {
     private PostgresCollectionEntryRepository repository;
+    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
-        repository = new PostgresCollectionEntryRepository();
+        System.out.println("DB URL: " + DatabaseConfig.fromEnvironment().getUrl());
+        jdbcTemplate = createJdbcTemplate();
+        runMigrations();
+        repository = new PostgresCollectionEntryRepository(jdbcTemplate);
+
         clearCollectionEntriesTable();
+        resetCollectionEntrySequence();
         clearUsersTable();
         clearCoinsTable();
         seedRequiredData();
@@ -30,34 +37,33 @@ class PostgresCollectionEntryRepositoryTest {
 
     @Test
     void addCollectionEntry_shouldStoreEntryInDatabase() {
-        CollectionEntry collectionEntry = new CollectionEntry(1, 1, 1, 2);
+        CollectionEntry createdEntry = repository.addCollectionEntry(1, 1, 2);
 
-        repository.addCollectionEntry(collectionEntry);
+        CollectionEntry foundEntry = repository.findCollectionEntryById(createdEntry.getId());
 
-        CollectionEntry foundEntry = repository.findCollectionEntryById(1);
-
-        assertEquals(collectionEntry, foundEntry);
+        assertTrue(createdEntry.getId() > 0);
+        assertEquals(createdEntry, foundEntry);
     }
 
     @Test
     void getAllCollectionEntries_shouldReturnAllStoredEntries() {
-        repository.addCollectionEntry(new CollectionEntry(1, 1, 1, 2));
-        repository.addCollectionEntry(new CollectionEntry(2, 1, 2, 0));
+        CollectionEntry firstEntry = repository.addCollectionEntry(1, 1, 2);
+        CollectionEntry secondEntry = repository.addCollectionEntry(1, 2, 0);
 
         List<CollectionEntry> collectionEntries = repository.getAllCollectionEntries();
 
         assertEquals(2, collectionEntries.size());
-        assertEquals(new CollectionEntry(1, 1, 1, 2), collectionEntries.get(0));
-        assertEquals(new CollectionEntry(2, 1, 2, 0), collectionEntries.get(1));
+        assertEquals(firstEntry, collectionEntries.get(0));
+        assertEquals(secondEntry, collectionEntries.get(1));
     }
 
     @Test
     void findCollectionEntryById_shouldReturnEntryWhenIdExists() {
-        repository.addCollectionEntry(new CollectionEntry(1, 1, 1, 2));
+        CollectionEntry createdEntry = repository.addCollectionEntry(1, 1, 2);
 
-        CollectionEntry foundEntry = repository.findCollectionEntryById(1);
+        CollectionEntry foundEntry = repository.findCollectionEntryById(createdEntry.getId());
 
-        assertEquals(new CollectionEntry(1, 1, 1, 2), foundEntry);
+        assertEquals(createdEntry, foundEntry);
     }
 
     @Test
@@ -69,11 +75,11 @@ class PostgresCollectionEntryRepositoryTest {
 
     @Test
     void findCollectionEntryByUserIdAndCoinId_shouldReturnEntryWhenPairExists() {
-        repository.addCollectionEntry(new CollectionEntry(1, 1, 2, 3));
+        CollectionEntry createdEntry = repository.addCollectionEntry(1, 2, 3);
 
         CollectionEntry foundEntry = repository.findCollectionEntryByUserIdAndCoinId(1, 2);
 
-        assertEquals(new CollectionEntry(1, 1, 2, 3), foundEntry);
+        assertEquals(createdEntry, foundEntry);
     }
 
     @Test
@@ -85,18 +91,23 @@ class PostgresCollectionEntryRepositoryTest {
 
     @Test
     void updateCollectionEntry_shouldReturnTrueWhenEntryExists() {
-        repository.addCollectionEntry(new CollectionEntry(1, 1, 1, 2));
+        CollectionEntry createdEntry = repository.addCollectionEntry(1, 1, 2);
 
-        boolean updated = repository.updateCollectionEntry(new CollectionEntry(1, 1, 1, 5));
+        boolean updated = repository.updateCollectionEntry(
+                new CollectionEntry(createdEntry.getId(), 1, 1, 5)
+        );
 
-        assertEquals(true, updated);
-        assertEquals(new CollectionEntry(1, 1, 1, 5), repository.findCollectionEntryById(1));
+        assertTrue(updated);
+        assertEquals(
+                new CollectionEntry(createdEntry.getId(), 1, 1, 5),
+                repository.findCollectionEntryById(createdEntry.getId())
+        );
     }
 
     @Test
     void getOwnedCoinsForUser_shouldReturnOnlyCoinsWithPositiveQuantity() {
-        repository.addCollectionEntry(new CollectionEntry(1, 1, 1, 2));
-        repository.addCollectionEntry(new CollectionEntry(2, 1, 2, 0));
+        repository.addCollectionEntry(1, 1, 2);
+        repository.addCollectionEntry(1, 2, 0);
 
         List<OwnedCoinView> ownedCoins = repository.getOwnedCoinsForUser(1);
 
@@ -107,73 +118,9 @@ class PostgresCollectionEntryRepositoryTest {
         );
     }
 
-    private void seedRequiredData() {
-        String insertUserSql = """
-                INSERT INTO users (id, username)
-                VALUES (1, 'vince')
-                """;
-
-        String insertCoinsSql = """
-                INSERT INTO coins (id, country, denomination, year)
-                VALUES
-                    (1, 'Bulgaria', '1 Lev', 2002),
-                    (2, 'Germany', '1 Euro', 2010)
-                """;
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement userStatement = connection.prepareStatement(insertUserSql);
-             PreparedStatement coinsStatement = connection.prepareStatement(insertCoinsSql)) {
-
-            userStatement.executeUpdate();
-            coinsStatement.executeUpdate();
-
-        } catch (SQLException exception) {
-            throw new RuntimeException("Failed to seed required test data.", exception);
-        }
-    }
-
-    private void clearCollectionEntriesTable() {
-        String sql = "DELETE FROM collection_entries";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.executeUpdate();
-
-        } catch (SQLException exception) {
-            throw new RuntimeException("Failed to clear collection_entries table before test.", exception);
-        }
-    }
-
-    private void clearUsersTable() {
-        String sql = "DELETE FROM users";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.executeUpdate();
-
-        } catch (SQLException exception) {
-            throw new RuntimeException("Failed to clear users table before test.", exception);
-        }
-    }
-
-    private void clearCoinsTable() {
-        String sql = "DELETE FROM coins";
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-
-            statement.executeUpdate();
-
-        } catch (SQLException exception) {
-            throw new RuntimeException("Failed to clear coins table before test.", exception);
-        }
-    }
-
     @Test
     void getMissingCoinsForUser_shouldReturnCoinsWithoutEntry() {
-        repository.addCollectionEntry(new CollectionEntry(1, 1, 1, 2));
+        repository.addCollectionEntry(1, 1, 2);
 
         List<MissingCoinView> missingCoins = repository.getMissingCoinsForUser(1);
 
@@ -186,8 +133,8 @@ class PostgresCollectionEntryRepositoryTest {
 
     @Test
     void getMissingCoinsForUser_shouldReturnCoinsWithZeroQuantity() {
-        repository.addCollectionEntry(new CollectionEntry(1, 1, 1, 2));
-        repository.addCollectionEntry(new CollectionEntry(2, 1, 2, 0));
+        repository.addCollectionEntry(1, 1, 2);
+        repository.addCollectionEntry(1, 2, 0);
 
         List<MissingCoinView> missingCoins = repository.getMissingCoinsForUser(1);
 
@@ -196,5 +143,66 @@ class PostgresCollectionEntryRepositoryTest {
                 new MissingCoinView(2, "Germany", "1 Euro", 2010),
                 missingCoins.get(0)
         );
+    }
+
+    private JdbcTemplate createJdbcTemplate() {
+        DatabaseConfig databaseConfig = DatabaseConfig.fromEnvironment();
+
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setUrl(databaseConfig.getUrl());
+        dataSource.setUsername(databaseConfig.getUsername());
+        dataSource.setPassword(databaseConfig.getPassword());
+
+        return new JdbcTemplate(dataSource);
+    }
+
+    private void runMigrations() {
+        DatabaseConfig databaseConfig = DatabaseConfig.fromEnvironment();
+
+        Flyway flyway = Flyway.configure()
+                .dataSource(
+                        databaseConfig.getUrl(),
+                        databaseConfig.getUsername(),
+                        databaseConfig.getPassword()
+                )
+                .locations("classpath:db/migration")
+                .baselineOnMigrate(true)
+                .load();
+
+        flyway.migrate();
+    }
+
+    private void seedRequiredData() {
+        jdbcTemplate.update(
+                """
+                INSERT INTO users (id, username)
+                VALUES (1, 'vince')
+                """
+        );
+
+        jdbcTemplate.update(
+                """
+                INSERT INTO coins (id, country, denomination, year)
+                VALUES
+                    (1, 'Bulgaria', '1 Lev', 2002),
+                    (2, 'Germany', '1 Euro', 2010)
+                """
+        );
+    }
+
+    private void clearCollectionEntriesTable() {
+        jdbcTemplate.update("DELETE FROM collection_entries");
+    }
+
+    private void resetCollectionEntrySequence() {
+        jdbcTemplate.execute("ALTER SEQUENCE collection_entries_id_seq RESTART WITH 1");
+    }
+
+    private void clearUsersTable() {
+        jdbcTemplate.update("DELETE FROM users");
+    }
+
+    private void clearCoinsTable() {
+        jdbcTemplate.update("DELETE FROM coins");
     }
 }

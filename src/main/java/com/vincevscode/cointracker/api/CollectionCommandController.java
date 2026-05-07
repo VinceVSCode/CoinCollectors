@@ -30,14 +30,8 @@ public class CollectionCommandController {
             throw new IllegalArgumentException("Request body is required.");
         }
 
-        collectionTrackingService.setCoinQuantity(userId, coinId, request.getQuantity());
-
         CollectionEntry collectionEntry =
-                collectionTrackingService.findCollectionEntryByUserIdAndCoinId(userId, coinId);
-
-        if (collectionEntry == null) {
-            throw new IllegalStateException("Collection entry was not found after update.");
-        }
+                collectionTrackingService.setCoinQuantity(userId, coinId, request.getQuantity());
 
         return new CollectionEntryResponse(
                 collectionEntry.getId(),

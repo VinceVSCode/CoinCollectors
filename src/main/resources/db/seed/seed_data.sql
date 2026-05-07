@@ -11,12 +11,12 @@ INSERT INTO coins (id, country, denomination, year) VALUES
     (5, 'Spain', '20 Centesimos', 2003),
     (6, 'Greece', '1 Euro', 2008);
 
-INSERT INTO collection_entries (id, user_id, coin_id, quantity) VALUES
-    (1, 1, 1, 2),
-    (2, 1, 2, 1),
-    (3, 1, 3, 0),
-    (4, 1, 4, 0),
-    (5, 2, 2, 3),
-    (6, 2, 5, 1),
-    (7, 3, 1, 0),
-    (8, 3, 6, 2);
+INSERT INTO collection_entries (user_id, coin_id, quantity) VALUES
+    (1, 1, 2),
+    (1, 2, 1),
+    (1, 3, 0),
+    (1, 4, 0),
+    (2, 2, 3),
+    (2, 5, 1),
+    (3, 1, 0),
+    (3, 6, 2);

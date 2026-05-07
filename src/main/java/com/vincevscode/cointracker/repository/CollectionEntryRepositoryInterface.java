@@ -1,4 +1,4 @@
-// v0.3.3: Repository contract for collection entry storage operations.
+// v0.4.0: Repository contract for collection entry storage operations.
 package com.vincevscode.cointracker.repository;
 
 import com.vincevscode.cointracker.model.CollectionEntry;
@@ -12,7 +12,7 @@ import com.vincevscode.cointracker.view.OwnedCoinView;
 import java.util.List;
 
 public interface CollectionEntryRepositoryInterface {
-    void addCollectionEntry(CollectionEntry collectionEntry);
+    CollectionEntry addCollectionEntry(int userId, int coinId, int quantity);
 
     List<CollectionEntry> getAllCollectionEntries();
 
@@ -33,7 +33,4 @@ public interface CollectionEntryRepositoryInterface {
     List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinFilter filter);
 
     List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinQuery query);
-
-    int getNextCollectionEntryId();
-
 }

@@ -1,15 +1,17 @@
-// v0.3.0: Service layer for tracking user coin quantities.
+// v0.4.0: Service layer for tracking user coin quantities with transactional write operations.
 package com.vincevscode.cointracker.service;
 
 import com.vincevscode.cointracker.model.CollectionEntry;
 import com.vincevscode.cointracker.query.MissingCoinFilter;
+import com.vincevscode.cointracker.query.MissingCoinQuery;
 import com.vincevscode.cointracker.query.OwnedCoinFilter;
+import com.vincevscode.cointracker.query.OwnedCoinQuery;
+import com.vincevscode.cointracker.query.PageRequest;
 import com.vincevscode.cointracker.repository.CollectionEntryRepositoryInterface;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
-import com.vincevscode.cointracker.query.MissingCoinQuery;
-import com.vincevscode.cointracker.query.OwnedCoinQuery;
-import com.vincevscode.cointracker.query.PageRequest;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 public class CollectionTrackingService {
@@ -19,7 +21,8 @@ public class CollectionTrackingService {
         this.collectionEntryRepository = collectionEntryRepository;
     }
 
-    public void setCoinQuantity(int userId, int coinId, int quantity) {
+    @Transactional
+    public CollectionEntry setCoinQuantity(int userId, int coinId, int quantity) {
         validateUserId(userId);
         validateCoinId(coinId);
 
@@ -39,14 +42,13 @@ public class CollectionTrackingService {
             );
 
             collectionEntryRepository.updateCollectionEntry(updatedEntry);
-            return;
+            return updatedEntry;
         }
 
-        int nextEntryId = collectionEntryRepository.getNextCollectionEntryId();
-        CollectionEntry newEntry = new CollectionEntry(nextEntryId, userId, coinId, quantity);
-        collectionEntryRepository.addCollectionEntry(newEntry);
+        return collectionEntryRepository.addCollectionEntry(userId, coinId, quantity);
     }
 
+    @Transactional(readOnly = true)
     public CollectionEntry findCollectionEntryByUserIdAndCoinId(int userId, int coinId) {
         validateUserId(userId);
         validateCoinId(coinId);
@@ -54,63 +56,44 @@ public class CollectionTrackingService {
         return collectionEntryRepository.findCollectionEntryByUserIdAndCoinId(userId, coinId);
     }
 
+    @Transactional(readOnly = true)
     public List<OwnedCoinView> getOwnedCoinsForUser(int userId) {
         validateUserId(userId);
-
         return collectionEntryRepository.getOwnedCoinsForUser(userId);
     }
 
+    @Transactional(readOnly = true)
     public List<OwnedCoinView> getOwnedCoinsForUser(int userId, OwnedCoinFilter filter) {
         validateUserId(userId);
         validateOwnedCoinFilter(filter);
-
         return collectionEntryRepository.getOwnedCoinsForUser(userId, filter);
     }
 
+    @Transactional(readOnly = true)
+    public List<OwnedCoinView> getOwnedCoinsForUser(int userId, OwnedCoinQuery query) {
+        validateUserId(userId);
+        validateOwnedCoinQuery(query);
+        return collectionEntryRepository.getOwnedCoinsForUser(userId, query);
+    }
+
+    @Transactional(readOnly = true)
     public List<MissingCoinView> getMissingCoinsForUser(int userId) {
         validateUserId(userId);
-
         return collectionEntryRepository.getMissingCoinsForUser(userId);
     }
 
+    @Transactional(readOnly = true)
     public List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinFilter filter) {
         validateUserId(userId);
         validateMissingCoinFilter(filter);
-
         return collectionEntryRepository.getMissingCoinsForUser(userId, filter);
     }
 
-    private void validateMissingCoinFilter(MissingCoinFilter filter) {
-        if (filter == null) {
-            return;
-        }
-
-        if (filter.getMinYear() != null && filter.getMinYear() <= 0) {
-            throw new IllegalArgumentException("Minimum year must be greater than 0.");
-        }
-
-        if (filter.getMaxYear() != null && filter.getMaxYear() <= 0) {
-            throw new IllegalArgumentException("Maximum year must be greater than 0.");
-        }
-
-        if (filter.getMinYear() != null
-                && filter.getMaxYear() != null
-                && filter.getMinYear() > filter.getMaxYear()) {
-            throw new IllegalArgumentException("Minimum year cannot be greater than maximum year.");
-        }
-    }
-
-    private void validateIdsAndQuantity(int entryId, int userId, int coinId, int quantity) {
-        if (entryId <= 0) {
-            throw new IllegalArgumentException("Collection entry ID must be greater than 0.");
-        }
-
+    @Transactional(readOnly = true)
+    public List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinQuery query) {
         validateUserId(userId);
-        validateCoinId(coinId);
-
-        if (quantity < 0) {
-            throw new IllegalArgumentException("Quantity cannot be negative.");
-        }
+        validateMissingCoinQuery(query);
+        return collectionEntryRepository.getMissingCoinsForUser(userId, query);
     }
 
     private void validateUserId(int userId) {
@@ -149,18 +132,24 @@ public class CollectionTrackingService {
         }
     }
 
-    public List<OwnedCoinView> getOwnedCoinsForUser(int userId, OwnedCoinQuery query) {
-        validateUserId(userId);
-        validateOwnedCoinQuery(query);
+    private void validateMissingCoinFilter(MissingCoinFilter filter) {
+        if (filter == null) {
+            return;
+        }
 
-        return collectionEntryRepository.getOwnedCoinsForUser(userId, query);
-    }
+        if (filter.getMinYear() != null && filter.getMinYear() <= 0) {
+            throw new IllegalArgumentException("Minimum year must be greater than 0.");
+        }
 
-    public List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinQuery query) {
-        validateUserId(userId);
-        validateMissingCoinQuery(query);
+        if (filter.getMaxYear() != null && filter.getMaxYear() <= 0) {
+            throw new IllegalArgumentException("Maximum year must be greater than 0.");
+        }
 
-        return collectionEntryRepository.getMissingCoinsForUser(userId, query);
+        if (filter.getMinYear() != null
+                && filter.getMaxYear() != null
+                && filter.getMinYear() > filter.getMaxYear()) {
+            throw new IllegalArgumentException("Minimum year cannot be greater than maximum year.");
+        }
     }
 
     private void validateOwnedCoinQuery(OwnedCoinQuery query) {
@@ -194,5 +183,4 @@ public class CollectionTrackingService {
             throw new IllegalArgumentException("Page size must be greater than 0.");
         }
     }
-
 }

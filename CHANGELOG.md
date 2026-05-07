@@ -3,19 +3,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
-## [0.3.3] - YYYY-MM-DD - 2026-05-07 
+## [0.4.0] - YYYY-MM-DD - 2026-05-07 
 
 ### Added
-- Initial Spring Boot HTTP layer for collection screen queries.
-- `CollectionQueryController` with owned and missing coin endpoints.
-- `RestExceptionHandler` for request validation errors.
-- `SetCoinQuantityRequest` and `CollectionEntryResponse` for collection write API operations.
-- `CollectionCommandController` with a PUT endpoint for setting coin quantity.
-- Backend-generated collection entry IDs through `getNextCollectionEntryId()`.
+- Database-generated IDs for `collection_entries` through PostgreSQL sequence-backed defaults.
+- Spring-managed JDBC configuration for transactional collection write operations.
 
 ### Changed
-- `App.java` now starts the Spring Boot application after database bootstrap.
-- Collection quantity updates no longer require the frontend to provide a collection entry ID.
+- Collection entry creation no longer uses manual ID generation.
+- `CollectionTrackingService` now uses transactional write methods and returns the server-controlled persisted entry.
+- Collection write API no longer depends on backend-generated IDs from the client side.
 
 ### Removed
 - N/A

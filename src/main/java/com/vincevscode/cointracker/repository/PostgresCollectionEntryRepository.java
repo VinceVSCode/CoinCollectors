@@ -1,7 +1,6 @@
-// v0.3.0: PostgreSQL repository implementation for collection entry storage operations.
+// v0.4.0: PostgreSQL repository implementation for collection entry storage operations using JdbcTemplate.
 package com.vincevscode.cointracker.repository;
 
-import com.vincevscode.cointracker.db.DatabaseConnection;
 import com.vincevscode.cointracker.model.CollectionEntry;
 import com.vincevscode.cointracker.query.MissingCoinFilter;
 import com.vincevscode.cointracker.query.MissingCoinQuery;
@@ -9,36 +8,46 @@ import com.vincevscode.cointracker.query.OwnedCoinFilter;
 import com.vincevscode.cointracker.query.OwnedCoinQuery;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PostgresCollectionEntryRepository implements CollectionEntryRepositoryInterface {
+    private final JdbcTemplate jdbcTemplate;
+
+    public PostgresCollectionEntryRepository(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @Override
-    public void addCollectionEntry(CollectionEntry collectionEntry) {
+    public CollectionEntry addCollectionEntry(int userId, int coinId, int quantity) {
         String sql = """
-                INSERT INTO collection_entries (id, user_id, coin_id, quantity)
-                VALUES (?, ?, ?, ?)
-                """;
+            INSERT INTO collection_entries (user_id, coin_id, quantity)
+            VALUES (?, ?, ?)
+            """;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
 
-            statement.setInt(1, collectionEntry.getId());
-            statement.setInt(2, collectionEntry.getUserId());
-            statement.setInt(3, collectionEntry.getCoinId());
-            statement.setInt(4, collectionEntry.getQuantity());
+        jdbcTemplate.update(connection -> {
+            PreparedStatement statement = connection.prepareStatement(sql, new String[]{"id"});
+            statement.setInt(1, userId);
+            statement.setInt(2, coinId);
+            statement.setInt(3, quantity);
+            return statement;
+        }, keyHolder);
 
-            statement.executeUpdate();
+        Number generatedId = keyHolder.getKey();
 
-        } catch (SQLException exception) {
-            throw new RuntimeException("Failed to add collection entry to PostgreSQL.", exception);
+        if (generatedId == null) {
+            throw new IllegalStateException("Failed to retrieve generated collection entry ID.");
         }
+
+        return new CollectionEntry(generatedId.intValue(), userId, coinId, quantity);
     }
 
     @Override
@@ -49,26 +58,14 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
                 ORDER BY id
                 """;
 
-        List<CollectionEntry> collectionEntries = new ArrayList<>();
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery()) {
-
-            while (resultSet.next()) {
-                int id = resultSet.getInt("id");
-                int userId = resultSet.getInt("user_id");
-                int coinId = resultSet.getInt("coin_id");
-                int quantity = resultSet.getInt("quantity");
-
-                collectionEntries.add(new CollectionEntry(id, userId, coinId, quantity));
-            }
-
-        } catch (SQLException exception) {
-            throw new RuntimeException("Failed to retrieve collection entries from PostgreSQL.", exception);
-        }
-
-        return collectionEntries;
+        return jdbcTemplate.query(sql, (resultSet, rowNumber) ->
+                new CollectionEntry(
+                        resultSet.getInt("id"),
+                        resultSet.getInt("user_id"),
+                        resultSet.getInt("coin_id"),
+                        resultSet.getInt("quantity")
+                )
+        );
     }
 
     @Override
@@ -79,27 +76,18 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
                 WHERE id = ?
                 """;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        List<CollectionEntry> results = jdbcTemplate.query(
+                sql,
+                (resultSet, rowNumber) -> new CollectionEntry(
+                        resultSet.getInt("id"),
+                        resultSet.getInt("user_id"),
+                        resultSet.getInt("coin_id"),
+                        resultSet.getInt("quantity")
+                ),
+                id
+        );
 
-            statement.setInt(1, id);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    int entryId = resultSet.getInt("id");
-                    int userId = resultSet.getInt("user_id");
-                    int coinId = resultSet.getInt("coin_id");
-                    int quantity = resultSet.getInt("quantity");
-
-                    return new CollectionEntry(entryId, userId, coinId, quantity);
-                }
-            }
-
-        } catch (SQLException exception) {
-            throw new RuntimeException("Failed to find collection entry by ID in PostgreSQL.", exception);
-        }
-
-        return null;
+        return results.isEmpty() ? null : results.get(0);
     }
 
     @Override
@@ -110,28 +98,19 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
                 WHERE user_id = ? AND coin_id = ?
                 """;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        List<CollectionEntry> results = jdbcTemplate.query(
+                sql,
+                (resultSet, rowNumber) -> new CollectionEntry(
+                        resultSet.getInt("id"),
+                        resultSet.getInt("user_id"),
+                        resultSet.getInt("coin_id"),
+                        resultSet.getInt("quantity")
+                ),
+                userId,
+                coinId
+        );
 
-            statement.setInt(1, userId);
-            statement.setInt(2, coinId);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    int entryId = resultSet.getInt("id");
-                    int foundUserId = resultSet.getInt("user_id");
-                    int foundCoinId = resultSet.getInt("coin_id");
-                    int quantity = resultSet.getInt("quantity");
-
-                    return new CollectionEntry(entryId, foundUserId, foundCoinId, quantity);
-                }
-            }
-
-        } catch (SQLException exception) {
-            throw new RuntimeException("Failed to find collection entry by user ID and coin ID in PostgreSQL.", exception);
-        }
-
-        return null;
+        return results.isEmpty() ? null : results.get(0);
     }
 
     @Override
@@ -142,21 +121,15 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
                 WHERE id = ?
                 """;
 
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        int updatedRows = jdbcTemplate.update(
+                sql,
+                updatedCollectionEntry.getUserId(),
+                updatedCollectionEntry.getCoinId(),
+                updatedCollectionEntry.getQuantity(),
+                updatedCollectionEntry.getId()
+        );
 
-            statement.setInt(1, updatedCollectionEntry.getUserId());
-            statement.setInt(2, updatedCollectionEntry.getCoinId());
-            statement.setInt(3, updatedCollectionEntry.getQuantity());
-            statement.setInt(4, updatedCollectionEntry.getId());
-
-            int affectedRows = statement.executeUpdate();
-
-            return affectedRows > 0;
-
-        } catch (SQLException exception) {
-            throw new RuntimeException("Failed to update collection entry in PostgreSQL.", exception);
-        }
+        return updatedRows > 0;
     }
 
     @Override
@@ -166,18 +139,17 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
 
     @Override
     public List<OwnedCoinView> getOwnedCoinsForUser(int userId, OwnedCoinFilter filter) {
-        OwnedCoinQuery query = new OwnedCoinQuery(filter, null, null, null);
-        return getOwnedCoinsForUser(userId, query);
+        return getOwnedCoinsForUser(userId, new OwnedCoinQuery(filter, null, null, null));
     }
 
     @Override
     public List<OwnedCoinView> getOwnedCoinsForUser(int userId, OwnedCoinQuery query) {
         StringBuilder sqlBuilder = new StringBuilder("""
-            SELECT c.id AS coin_id, c.country, c.denomination, c.year, ce.quantity
-            FROM collection_entries ce
-            JOIN coins c ON ce.coin_id = c.id
-            WHERE ce.user_id = ? AND ce.quantity > 0
-            """);
+                SELECT c.id AS coin_id, c.country, c.denomination, c.year, ce.quantity
+                FROM collection_entries ce
+                JOIN coins c ON ce.coin_id = c.id
+                WHERE ce.user_id = ? AND ce.quantity > 0
+                """);
 
         List<Object> parameters = new ArrayList<>();
         parameters.add(userId);
@@ -229,36 +201,17 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
             parameters.add(query.getPageRequest().getOffset());
         }
 
-        List<OwnedCoinView> ownedCoins = new ArrayList<>();
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sqlBuilder.toString())) {
-
-            bindParameters(statement, parameters);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    int coinId = resultSet.getInt("coin_id");
-                    String country = resultSet.getString("country");
-                    String denomination = resultSet.getString("denomination");
-                    int year = resultSet.getInt("year");
-                    int quantity = resultSet.getInt("quantity");
-
-                    ownedCoins.add(new OwnedCoinView(
-                            coinId,
-                            country,
-                            denomination,
-                            year,
-                            quantity
-                    ));
-                }
-            }
-
-        } catch (SQLException exception) {
-            throw new RuntimeException("Failed to retrieve owned coins for user from PostgreSQL.", exception);
-        }
-
-        return ownedCoins;
+        return jdbcTemplate.query(
+                sqlBuilder.toString(),
+                (resultSet, rowNumber) -> new OwnedCoinView(
+                        resultSet.getInt("coin_id"),
+                        resultSet.getString("country"),
+                        resultSet.getString("denomination"),
+                        resultSet.getInt("year"),
+                        resultSet.getInt("quantity")
+                ),
+                parameters.toArray()
+        );
     }
 
     @Override
@@ -268,19 +221,18 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
 
     @Override
     public List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinFilter filter) {
-        MissingCoinQuery query = new MissingCoinQuery(filter, null, null, null);
-        return getMissingCoinsForUser(userId, query);
+        return getMissingCoinsForUser(userId, new MissingCoinQuery(filter, null, null, null));
     }
 
     @Override
     public List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinQuery query) {
         StringBuilder sqlBuilder = new StringBuilder("""
-            SELECT c.id AS coin_id, c.country, c.denomination, c.year
-            FROM coins c
-            LEFT JOIN collection_entries ce
-                ON c.id = ce.coin_id AND ce.user_id = ?
-            WHERE ce.id IS NULL OR ce.quantity = 0
-            """);
+                SELECT c.id AS coin_id, c.country, c.denomination, c.year
+                FROM coins c
+                LEFT JOIN collection_entries ce
+                    ON c.id = ce.coin_id AND ce.user_id = ?
+                WHERE ce.id IS NULL OR ce.quantity = 0
+                """);
 
         List<Object> parameters = new ArrayList<>();
         parameters.add(userId);
@@ -327,69 +279,15 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
             parameters.add(query.getPageRequest().getOffset());
         }
 
-        List<MissingCoinView> missingCoins = new ArrayList<>();
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sqlBuilder.toString())) {
-
-            bindParameters(statement, parameters);
-
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    int coinId = resultSet.getInt("coin_id");
-                    String country = resultSet.getString("country");
-                    String denomination = resultSet.getString("denomination");
-                    int year = resultSet.getInt("year");
-
-                    missingCoins.add(new MissingCoinView(
-                            coinId,
-                            country,
-                            denomination,
-                            year
-                    ));
-                }
-            }
-
-        } catch (SQLException exception) {
-            throw new RuntimeException("Failed to retrieve missing coins for user from PostgreSQL.", exception);
-        }
-
-        return missingCoins;
-    }
-
-    private void bindParameters(PreparedStatement statement, List<Object> parameters) throws SQLException {
-        for (int index = 0; index < parameters.size(); index++) {
-            Object parameter = parameters.get(index);
-
-            if (parameter instanceof Integer) {
-                statement.setInt(index + 1, (Integer) parameter);
-            } else if (parameter instanceof String) {
-                statement.setString(index + 1, (String) parameter);
-            } else {
-                throw new IllegalArgumentException("Unsupported SQL parameter type: " + parameter.getClass());
-            }
-        }
-    }
-
-    @Override
-    public int getNextCollectionEntryId() {
-        String sql = """
-            SELECT COALESCE(MAX(id), 0) + 1 AS next_id
-            FROM collection_entries
-            """;
-
-        try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery()) {
-
-            if (resultSet.next()) {
-                return resultSet.getInt("next_id");
-            }
-
-        } catch (SQLException exception) {
-            throw new RuntimeException("Failed to determine next collection entry ID in PostgreSQL.", exception);
-        }
-
-        throw new IllegalStateException("Could not determine next collection entry ID.");
+        return jdbcTemplate.query(
+                sqlBuilder.toString(),
+                (resultSet, rowNumber) -> new MissingCoinView(
+                        resultSet.getInt("coin_id"),
+                        resultSet.getString("country"),
+                        resultSet.getString("denomination"),
+                        resultSet.getInt("year")
+                ),
+                parameters.toArray()
+        );
     }
 }
