@@ -290,4 +290,96 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
                 parameters.toArray()
         );
     }
+
+    @Override
+    public long countOwnedCoinsForUser(int userId, OwnedCoinFilter filter) {
+        StringBuilder sqlBuilder = new StringBuilder("""
+            SELECT COUNT(*)
+            FROM collection_entries ce
+            JOIN coins c ON ce.coin_id = c.id
+            WHERE ce.user_id = ? AND ce.quantity > 0
+            """);
+
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(userId);
+
+        if (filter != null) {
+            if (filter.getCountry() != null && !filter.getCountry().isBlank()) {
+                sqlBuilder.append(" AND c.country = ?");
+                parameters.add(filter.getCountry());
+            }
+
+            if (filter.getDenomination() != null && !filter.getDenomination().isBlank()) {
+                sqlBuilder.append(" AND c.denomination = ?");
+                parameters.add(filter.getDenomination());
+            }
+
+            if (filter.getMinYear() != null) {
+                sqlBuilder.append(" AND c.year >= ?");
+                parameters.add(filter.getMinYear());
+            }
+
+            if (filter.getMaxYear() != null) {
+                sqlBuilder.append(" AND c.year <= ?");
+                parameters.add(filter.getMaxYear());
+            }
+
+            if (filter.getMinQuantity() != null) {
+                sqlBuilder.append(" AND ce.quantity >= ?");
+                parameters.add(filter.getMinQuantity());
+            }
+        }
+
+        Long count = jdbcTemplate.queryForObject(
+                sqlBuilder.toString(),
+                Long.class,
+                parameters.toArray()
+        );
+
+        return count == null ? 0 : count;
+    }
+
+    @Override
+    public long countMissingCoinsForUser(int userId, MissingCoinFilter filter) {
+        StringBuilder sqlBuilder = new StringBuilder("""
+            SELECT COUNT(*)
+            FROM coins c
+            LEFT JOIN collection_entries ce
+                ON c.id = ce.coin_id AND ce.user_id = ?
+            WHERE ce.id IS NULL OR ce.quantity = 0
+            """);
+
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(userId);
+
+        if (filter != null) {
+            if (filter.getCountry() != null && !filter.getCountry().isBlank()) {
+                sqlBuilder.append(" AND c.country = ?");
+                parameters.add(filter.getCountry());
+            }
+
+            if (filter.getDenomination() != null && !filter.getDenomination().isBlank()) {
+                sqlBuilder.append(" AND c.denomination = ?");
+                parameters.add(filter.getDenomination());
+            }
+
+            if (filter.getMinYear() != null) {
+                sqlBuilder.append(" AND c.year >= ?");
+                parameters.add(filter.getMinYear());
+            }
+
+            if (filter.getMaxYear() != null) {
+                sqlBuilder.append(" AND c.year <= ?");
+                parameters.add(filter.getMaxYear());
+            }
+        }
+
+        Long count = jdbcTemplate.queryForObject(
+                sqlBuilder.toString(),
+                Long.class,
+                parameters.toArray()
+        );
+
+        return count == null ? 0 : count;
+    }
 }

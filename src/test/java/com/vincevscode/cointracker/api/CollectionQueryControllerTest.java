@@ -120,4 +120,48 @@ class CollectionQueryControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Page number must be greater than 0."));
     }
+
+    @Test
+    void getOwnedCoinsForUser_shouldReturnPagedResponseWhenPaginationIsRequested() throws Exception {
+        when(collectionTrackingService.getOwnedCoinsForUser(eq(1), ArgumentMatchers.<OwnedCoinQuery>any()))
+                .thenReturn(List.of(
+                        new OwnedCoinView(1, "Bulgaria", "1 Lev", 2002, 2)
+                ));
+
+        when(collectionTrackingService.countOwnedCoinsForUser(eq(1), ArgumentMatchers.<com.vincevscode.cointracker.query.OwnedCoinFilter>any()))
+                .thenReturn(7L);
+
+        mockMvc.perform(
+                        get("/api/users/1/owned-coins")
+                                .param("page", "1")
+                                .param("size", "10")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].coinId").value(1))
+                .andExpect(jsonPath("$.totalCount").value(7))
+                .andExpect(jsonPath("$.pageNumber").value(1))
+                .andExpect(jsonPath("$.pageSize").value(10));
+    }
+
+    @Test
+    void getMissingCoinsForUser_shouldReturnPagedResponseWhenPaginationIsRequested() throws Exception {
+        when(collectionTrackingService.getMissingCoinsForUser(eq(1), ArgumentMatchers.<MissingCoinQuery>any()))
+                .thenReturn(List.of(
+                        new MissingCoinView(3, "France", "2 Euro", 2015)
+                ));
+
+        when(collectionTrackingService.countMissingCoinsForUser(eq(1), ArgumentMatchers.<com.vincevscode.cointracker.query.MissingCoinFilter>any()))
+                .thenReturn(4L);
+
+        mockMvc.perform(
+                        get("/api/users/1/missing-coins")
+                                .param("page", "2")
+                                .param("size", "5")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].coinId").value(3))
+                .andExpect(jsonPath("$.totalCount").value(4))
+                .andExpect(jsonPath("$.pageNumber").value(2))
+                .andExpect(jsonPath("$.pageSize").value(5));
+    }
 }

@@ -30,17 +30,17 @@ public class CollectionQueryController {
     }
 
     @GetMapping("/owned-coins")
-    public List<OwnedCoinView> getOwnedCoinsForUser(
-        @PathVariable("userId") int userId,
-        @RequestParam(name = "country", required = false) String country,
-        @RequestParam(name = "denomination", required = false) String denomination,
-        @RequestParam(name = "minYear", required = false) Integer minYear,
-        @RequestParam(name = "maxYear", required = false) Integer maxYear,
-        @RequestParam(name = "minQuantity", required = false) Integer minQuantity,
-        @RequestParam(name = "sortField", required = false) String sortField,
-        @RequestParam(name = "sortDirection", required = false) String sortDirection,
-        @RequestParam(name = "page", required = false) Integer page,
-        @RequestParam(name = "size", required = false) Integer size
+    public Object getOwnedCoinsForUser(
+            @PathVariable("userId") int userId,
+            @RequestParam(name = "country", required = false) String country,
+            @RequestParam(name = "denomination", required = false) String denomination,
+            @RequestParam(name = "minYear", required = false) Integer minYear,
+            @RequestParam(name = "maxYear", required = false) Integer maxYear,
+            @RequestParam(name = "minQuantity", required = false) Integer minQuantity,
+            @RequestParam(name = "sortField", required = false) String sortField,
+            @RequestParam(name = "sortDirection", required = false) String sortDirection,
+            @RequestParam(name = "page", required = false) Integer page,
+            @RequestParam(name = "size", required = false) Integer size
     ) {
         OwnedCoinFilter filter = buildOwnedCoinFilter(
                 country,
@@ -52,11 +52,20 @@ public class CollectionQueryController {
 
         OwnedCoinQuery query = buildOwnedCoinQuery(filter, sortField, sortDirection, page, size);
 
+        if (page != null && size != null) {
+            return new com.vincevscode.cointracker.api.dto.PagedResponse<>(
+                    collectionTrackingService.getOwnedCoinsForUser(userId, query),
+                    collectionTrackingService.countOwnedCoinsForUser(userId, filter),
+                    page,
+                    size
+            );
+        }
+
         return collectionTrackingService.getOwnedCoinsForUser(userId, query);
     }
 
     @GetMapping("/missing-coins")
-    public List<MissingCoinView> getMissingCoinsForUser(
+    public Object getMissingCoinsForUser(
             @PathVariable("userId") int userId,
             @RequestParam(name = "country", required = false) String country,
             @RequestParam(name = "denomination", required = false) String denomination,
@@ -75,6 +84,15 @@ public class CollectionQueryController {
         );
 
         MissingCoinQuery query = buildMissingCoinQuery(filter, sortField, sortDirection, page, size);
+
+        if (page != null && size != null) {
+            return new com.vincevscode.cointracker.api.dto.PagedResponse<>(
+                    collectionTrackingService.getMissingCoinsForUser(userId, query),
+                    collectionTrackingService.countMissingCoinsForUser(userId, filter),
+                    page,
+                    size
+            );
+        }
 
         return collectionTrackingService.getMissingCoinsForUser(userId, query);
     }

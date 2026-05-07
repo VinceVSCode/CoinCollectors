@@ -183,4 +183,19 @@ public class CollectionTrackingService {
             throw new IllegalArgumentException("Page size must be greater than 0.");
         }
     }
+
+    public long countOwnedCoinsForUser(int userId, OwnedCoinFilter filter) {
+        validateUserId(userId);
+        validateOwnedCoinFilter(filter);
+
+        return collectionEntryRepository.countOwnedCoinsForUser(userId, filter);
+    }
+
+    public long countMissingCoinsForUser(int userId, MissingCoinFilter filter) {
+        validateUserId(userId);
+        validateMissingCoinFilter(filter);
+
+        return collectionEntryRepository.countMissingCoinsForUser(userId, filter);
+    }
+
 }
