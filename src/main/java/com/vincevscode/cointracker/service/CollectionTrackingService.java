@@ -19,8 +19,13 @@ public class CollectionTrackingService {
         this.collectionEntryRepository = collectionEntryRepository;
     }
 
-    public void setCoinQuantity(int entryId, int userId, int coinId, int quantity) {
-        validateIdsAndQuantity(entryId, userId, coinId, quantity);
+    public void setCoinQuantity(int userId, int coinId, int quantity) {
+        validateUserId(userId);
+        validateCoinId(coinId);
+
+        if (quantity < 0) {
+            throw new IllegalArgumentException("Quantity cannot be negative.");
+        }
 
         CollectionEntry existingEntry =
                 collectionEntryRepository.findCollectionEntryByUserIdAndCoinId(userId, coinId);
@@ -37,7 +42,8 @@ public class CollectionTrackingService {
             return;
         }
 
-        CollectionEntry newEntry = new CollectionEntry(entryId, userId, coinId, quantity);
+        int nextEntryId = collectionEntryRepository.getNextCollectionEntryId();
+        CollectionEntry newEntry = new CollectionEntry(nextEntryId, userId, coinId, quantity);
         collectionEntryRepository.addCollectionEntry(newEntry);
     }
 

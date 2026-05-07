@@ -33,4 +33,7 @@ public interface CollectionEntryRepositoryInterface {
     List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinFilter filter);
 
     List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinQuery query);
+
+    int getNextCollectionEntryId();
+
 }

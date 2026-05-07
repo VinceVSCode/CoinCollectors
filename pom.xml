@@ -7,14 +7,14 @@
 
   <groupId>com.vincevscode</groupId>
   <artifactId>coin-tracker</artifactId>
-  <version>0.3.3</version>
+  <version>0.4.0</version>
   <name>coin-tracker</name>
 
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit.version>5.10.2</junit.version>
-    <spring.boot.version>3.5.14</spring.boot.version>
+    <spring.boot.version>3.5.11</spring.boot.version>
   </properties>
 
   <dependencies>
@@ -46,6 +46,7 @@
       <version>10.17.0</version>
     </dependency>
 
+    <!--  SpringBoot -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
@@ -63,6 +64,7 @@
         <version>3.12.1</version>
         <configuration>
           <release>${maven.compiler.release}</release>
+          <parameters>true</parameters>
         </configuration>
       </plugin>
 

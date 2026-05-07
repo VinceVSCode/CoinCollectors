@@ -370,4 +370,26 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
             }
         }
     }
+
+    @Override
+    public int getNextCollectionEntryId() {
+        String sql = """
+            SELECT COALESCE(MAX(id), 0) + 1 AS next_id
+            FROM collection_entries
+            """;
+
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            if (resultSet.next()) {
+                return resultSet.getInt("next_id");
+            }
+
+        } catch (SQLException exception) {
+            throw new RuntimeException("Failed to determine next collection entry ID in PostgreSQL.", exception);
+        }
+
+        throw new IllegalStateException("Could not determine next collection entry ID.");
+    }
 }
