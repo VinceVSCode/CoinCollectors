@@ -8,6 +8,9 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
+import com.vincevscode.cointracker.repository.CoinCatalogQueryRepositoryInterface;
+import com.vincevscode.cointracker.repository.PostgresCoinCatalogQueryRepository;
+import com.vincevscode.cointracker.service.CoinCatalogQueryService;
 
 import javax.sql.DataSource;
 
@@ -41,5 +44,17 @@ public class ApplicationConfiguration {
             CollectionEntryRepositoryInterface collectionEntryRepository
     ) {
         return new CollectionTrackingService(collectionEntryRepository);
+    }
+
+    @Bean
+    public CoinCatalogQueryRepositoryInterface coinCatalogQueryRepository(JdbcTemplate jdbcTemplate) {
+        return new PostgresCoinCatalogQueryRepository(jdbcTemplate);
+    }
+
+    @Bean
+    public CoinCatalogQueryService coinCatalogQueryService(
+            CoinCatalogQueryRepositoryInterface coinCatalogQueryRepository
+    ) {
+        return new CoinCatalogQueryService(coinCatalogQueryRepository);
     }
 }
