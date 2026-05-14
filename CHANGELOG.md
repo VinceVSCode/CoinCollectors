@@ -6,10 +6,10 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 ## [0.4.2] - YYYY-MM-DD - 2026-05-12 
 
 ### Added
-- Catalog coin screen query models: `CoinCatalogFilter`, `CoinCatalogSortField`, and `CoinCatalogQuery`.
-- `CoinCatalogView` and PostgreSQL-backed catalog query repository/service.
-- `CoinCatalogController` with filter, sort, and pagination support.
-- Controller tests for catalog coin API behavior.
+- User query API with `/api/users` and `/api/users/{userId}`.
+- Catalog coin API with filter, sort, and pagination support.
+- Static frontend page served from Spring Boot at `/`.
+- Frontend user selection and quantity update workflow using the backend APIs.
 
 ### Changed
 - N/A

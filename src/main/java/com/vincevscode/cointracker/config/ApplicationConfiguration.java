@@ -11,7 +11,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import com.vincevscode.cointracker.repository.CoinCatalogQueryRepositoryInterface;
 import com.vincevscode.cointracker.repository.PostgresCoinCatalogQueryRepository;
 import com.vincevscode.cointracker.service.CoinCatalogQueryService;
-
+import com.vincevscode.cointracker.repository.PostgresUserQueryRepository;
+import com.vincevscode.cointracker.repository.UserQueryRepositoryInterface;
+import com.vincevscode.cointracker.service.UserQueryService;
 import javax.sql.DataSource;
 
 @Configuration
@@ -56,5 +58,15 @@ public class ApplicationConfiguration {
             CoinCatalogQueryRepositoryInterface coinCatalogQueryRepository
     ) {
         return new CoinCatalogQueryService(coinCatalogQueryRepository);
+    }
+
+    @Bean
+    public UserQueryRepositoryInterface userQueryRepository(JdbcTemplate jdbcTemplate) {
+        return new PostgresUserQueryRepository(jdbcTemplate);
+    }
+
+    @Bean
+    public UserQueryService userQueryService(UserQueryRepositoryInterface userQueryRepository) {
+        return new UserQueryService(userQueryRepository);
     }
 }

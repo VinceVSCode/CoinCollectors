@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 24px;
+            background: #f7f7f7;
+            color: #222;
+        }
+
+        h1, h2 {
+            margin-bottom: 12px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 18px;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        select, input, button {
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #efefef;
+        }
+
+        .small-input {
+            width: 70px;
+        }
+
+        .status {
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        .error {
+            color: #b00020;
+        }
+
+        .success {
+            color: #0a7a2f;
+        }
+    </style>
+</head>
+<body>
+<h1>Coin Tracker</h1>
+
+<div class="section">
+    <h2>User Selection</h2>
+    <div class="row">
+        <label for="userSelect">Choose user:</label>
+        <select id="userSelect"></select>
+        <button id="refreshButton">Refresh Data</button>
+    </div>
+    <div id="userStatus" class="status"></div>
+</div>
+
+<div class="section">
+    <h2>Coin Catalog</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Country</th>
+            <th>Denomination</th>
+            <th>Year</th>
+            <th>Set Quantity</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody id="catalogTableBody"></tbody>
+    </table>
+    <div id="catalogStatus" class="status"></div>
+</div>
+
+<div class="section">
+    <h2>Owned Coins</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Country</th>
+            <th>Denomination</th>
+            <th>Year</th>
+            <th>Quantity</th>
+        </tr>
+        </thead>
+        <tbody id="ownedTableBody"></tbody>
+    </table>
+</div>
+
+<div class="section">
+    <h2>Missing Coins</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Country</th>
+            <th>Denomination</th>
+            <th>Year</th>
+        </tr>
+        </thead>
+        <tbody id="missingTableBody"></tbody>
+    </table>
+</div>
+
+<script>
+    const userSelect = document.getElementById("userSelect");
+    const refreshButton = document.getElementById("refreshButton");
+    const catalogTableBody = document.getElementById("catalogTableBody");
+    const ownedTableBody = document.getElementById("ownedTableBody");
+    const missingTableBody = document.getElementById("missingTableBody");
+    const userStatus = document.getElementById("userStatus");
+    const catalogStatus = document.getElementById("catalogStatus");
+
+    async function fetchJson(url, options = {}) {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+            let errorMessage = "Request failed.";
+            try {
+                const errorBody = await response.json();
+                if (errorBody.error) {
+                    errorMessage = errorBody.error;
+                }
+            } catch (ignored) {
+            }
+            throw new Error(errorMessage);
+        }
+
+        return response.json();
+    }
+
+    async function loadUsers() {
+        userStatus.textContent = "Loading users...";
+        userStatus.className = "status";
+
+        try {
+            const users = await fetchJson("/api/users");
+
+            userSelect.innerHTML = "";
+
+            users.forEach(user => {
+                const option = document.createElement("option");
+                option.value = user.userId;
+                option.textContent = `${user.userId} - ${user.username}`;
+                userSelect.appendChild(option);
+            });
+
+            userStatus.textContent = users.length > 0
+                ? "Users loaded."
+                : "No users found.";
+            userStatus.className = "status success";
+        } catch (error) {
+            userStatus.textContent = error.message;
+            userStatus.className = "status error";
+        }
+    }
+
+    async function loadCatalog() {
+        catalogStatus.textContent = "Loading catalog...";
+        catalogStatus.className = "status";
+
+        try {
+            const coins = await fetchJson("/api/coins");
+            catalogTableBody.innerHTML = "";
+
+            coins.forEach(coin => {
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td>${coin.coinId}</td>
+                    <td>${coin.country}</td>
+                    <td>${coin.denomination}</td>
+                    <td>${coin.year}</td>
+                    <td>
+                        <input type="number" min="0" value="0" class="small-input" id="quantity-${coin.coinId}">
+                    </td>
+                    <td>
+                        <button data-coin-id="${coin.coinId}">Save</button>
+                    </td>
+                `;
+
+                const button = row.querySelector("button");
+                button.addEventListener("click", () => updateQuantity(coin.coinId));
+
+                catalogTableBody.appendChild(row);
+            });
+
+            catalogStatus.textContent = "Catalog loaded.";
+            catalogStatus.className = "status success";
+        } catch (error) {
+            catalogStatus.textContent = error.message;
+            catalogStatus.className = "status error";
+        }
+    }
+
+    async function loadOwnedCoins() {
+        const userId = userSelect.value;
+        const ownedCoins = await fetchJson(`/api/users/${userId}/owned-coins`);
+
+        ownedTableBody.innerHTML = "";
+
+        ownedCoins.forEach(coin => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${coin.coinId}</td>
+                <td>${coin.country}</td>
+                <td>${coin.denomination}</td>
+                <td>${coin.year}</td>
+                <td>${coin.quantity}</td>
+            `;
+            ownedTableBody.appendChild(row);
+        });
+    }
+
+    async function loadMissingCoins() {
+        const userId = userSelect.value;
+        const missingCoins = await fetchJson(`/api/users/${userId}/missing-coins`);
+
+        missingTableBody.innerHTML = "";
+
+        missingCoins.forEach(coin => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${coin.coinId}</td>
+                <td>${coin.country}</td>
+                <td>${coin.denomination}</td>
+                <td>${coin.year}</td>
+            `;
+            missingTableBody.appendChild(row);
+        });
+    }
+
+    async function loadAllData() {
+        if (!userSelect.value) {
+            return;
+        }
+
+        await Promise.all([
+            loadCatalog(),
+            loadOwnedCoins(),
+            loadMissingCoins()
+        ]);
+    }
+
+    async function updateQuantity(coinId) {
+        const userId = userSelect.value;
+        const input = document.getElementById(`quantity-${coinId}`);
+        const quantity = Number(input.value);
+
+        catalogStatus.textContent = "Saving quantity...";
+        catalogStatus.className = "status";
+
+        try {
+            await fetchJson(`/api/users/${userId}/collection/${coinId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ quantity })
+            });
+
+            catalogStatus.textContent = `Saved quantity ${quantity} for coin ${coinId}.`;
+            catalogStatus.className = "status success";
+
+            await loadOwnedCoins();
+            await loadMissingCoins();
+        } catch (error) {
+            catalogStatus.textContent = error.message;
+            catalogStatus.className = "status error";
+        }
+    }
+
+    refreshButton.addEventListener("click", loadAllData);
+    userSelect.addEventListener("change", loadAllData);
+
+    async function initializePage() {
+        await loadUsers();
+        await loadAllData();
+    }
+
+    initializePage();
+</script>
+</body>
+</html>
