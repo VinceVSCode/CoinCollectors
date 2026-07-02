@@ -3,6 +3,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.4.4] - YYYY-MM-DD - 2026-07-02
+
+### Added
+- Tests for `AuthUserQueryService` and `PostgresAuthUserRepository`.
+
+### Changed
+- N/A
+
+### Removed
+- Duplicate nested `AuthUserRepositoryInterface`/`PostgresAuthUserRepository` definitions accidentally left inside `UserRepositoryInterface` and `UserQueryRepositoryInterface`.
+
+### Fixed
+- `AuthUserQueryService` now compiles against the top-level `AuthUserRepositoryInterface` (the same one `ApplicationConfiguration` wires in), instead of an unrelated nested interface of the same name that never matched the configured bean.
+
+### Bugs
+- N/A
+
 ## [0.4.3] - YYYY-MM-DD - 2026-05-16 
 
 ### Added

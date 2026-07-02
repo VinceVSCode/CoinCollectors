@@ -2,13 +2,13 @@
 package com.vincevscode.cointracker.service;
 
 import com.vincevscode.cointracker.model.AuthUser;
-import com.vincevscode.cointracker.repository.UserRepositoryInterface;
+import com.vincevscode.cointracker.repository.AuthUserRepositoryInterface;
 import org.springframework.transaction.annotation.Transactional;
 
 public class AuthUserQueryService {
-    private final UserRepositoryInterface.AuthUserRepositoryInterface authUserRepository;
+    private final AuthUserRepositoryInterface authUserRepository;
 
-    public AuthUserQueryService(UserRepositoryInterface.AuthUserRepositoryInterface authUserRepository) {
+    public AuthUserQueryService(AuthUserRepositoryInterface authUserRepository) {
         this.authUserRepository = authUserRepository;
     }
 

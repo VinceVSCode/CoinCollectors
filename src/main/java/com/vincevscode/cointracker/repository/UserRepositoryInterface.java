@@ -11,10 +11,4 @@ public interface UserRepositoryInterface {
     List<User> getAllUsers();
 
     User findUserById(int id);
-
-    interface AuthUserRepositoryInterface {
-        AuthUser findAuthUserById(int userId);
-
-        AuthUser findAuthUserByUsername(String username);
-    }
 }
