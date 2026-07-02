@@ -1,8 +1,7 @@
-INSERT INTO users (id, username) VALUES
-     (1, 'vince'),
-     (2, 'alex'),
-     (3, 'maria');
-
+INSERT INTO users (id, username, password_hash, role, is_active) VALUES
+    (1, 'vince', NULL, 'ADMIN', TRUE),
+    (2, 'alex', NULL, 'USER', TRUE),
+    (3, 'maria', NULL, 'USER', TRUE);
 INSERT INTO coins (id, country, denomination, year) VALUES
     (1, 'Bulgaria', '1 Lev', 2002),
     (2, 'Germany', '1 Euro', 2010),

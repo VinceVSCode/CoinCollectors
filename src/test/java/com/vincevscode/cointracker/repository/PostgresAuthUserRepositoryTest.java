@@ -1,0 +1,106 @@
+// v0.4.4: Integration tests for PostgreSQL-backed auth user repository behavior.
+package com.vincevscode.cointracker.repository;
+
+import com.vincevscode.cointracker.config.DatabaseConfig;
+import com.vincevscode.cointracker.model.AuthUser;
+import com.vincevscode.cointracker.model.UserRole;
+import org.flywaydb.core.Flyway;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class PostgresAuthUserRepositoryTest {
+    private PostgresAuthUserRepository repository;
+    private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void setUp() {
+        jdbcTemplate = createJdbcTemplate();
+        runMigrations();
+        repository = new PostgresAuthUserRepository(jdbcTemplate);
+
+        clearUsersTable();
+        seedUsers();
+    }
+
+    @Test
+    void findAuthUserById_shouldReturnUserWhenIdExists() {
+        AuthUser foundUser = repository.findAuthUserById(1);
+
+        assertEquals(1, foundUser.getId());
+        assertEquals("vince", foundUser.getUsername());
+        assertEquals("hashed-password", foundUser.getPasswordHash());
+        assertEquals(UserRole.ADMIN, foundUser.getRole());
+        assertTrue(foundUser.isActive());
+    }
+
+    @Test
+    void findAuthUserById_shouldReturnNullWhenIdDoesNotExist() {
+        AuthUser foundUser = repository.findAuthUserById(999);
+
+        assertNull(foundUser);
+    }
+
+    @Test
+    void findAuthUserByUsername_shouldReturnUserWhenUsernameExists() {
+        AuthUser foundUser = repository.findAuthUserByUsername("alex");
+
+        assertEquals(2, foundUser.getId());
+        assertEquals("alex", foundUser.getUsername());
+        assertEquals(UserRole.USER, foundUser.getRole());
+    }
+
+    @Test
+    void findAuthUserByUsername_shouldReturnNullWhenUsernameDoesNotExist() {
+        AuthUser foundUser = repository.findAuthUserByUsername("nobody");
+
+        assertNull(foundUser);
+    }
+
+    private JdbcTemplate createJdbcTemplate() {
+        DatabaseConfig databaseConfig = DatabaseConfig.fromEnvironment();
+
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setUrl(databaseConfig.getUrl());
+        dataSource.setUsername(databaseConfig.getUsername());
+        dataSource.setPassword(databaseConfig.getPassword());
+
+        return new JdbcTemplate(dataSource);
+    }
+
+    private void runMigrations() {
+        DatabaseConfig databaseConfig = DatabaseConfig.fromEnvironment();
+
+        Flyway flyway = Flyway.configure()
+                .dataSource(
+                        databaseConfig.getUrl(),
+                        databaseConfig.getUsername(),
+                        databaseConfig.getPassword()
+                )
+                .locations("classpath:db/migration")
+                .baselineOnMigrate(true)
+                .load();
+
+        flyway.migrate();
+    }
+
+    private void clearUsersTable() {
+        jdbcTemplate.update("DELETE FROM users");
+    }
+
+    private void seedUsers() {
+        jdbcTemplate.update(
+                """
+                INSERT INTO users (id, username, password_hash, role, is_active)
+                VALUES
+                    (1, 'vince', 'hashed-password', 'ADMIN', TRUE),
+                    (2, 'alex', 'hashed-password', 'USER', TRUE)
+                """
+        );
+    }
+}
