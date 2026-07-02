@@ -15,6 +15,9 @@ import com.vincevscode.cointracker.repository.PostgresUserQueryRepository;
 import com.vincevscode.cointracker.repository.UserQueryRepositoryInterface;
 import com.vincevscode.cointracker.service.UserQueryService;
 import javax.sql.DataSource;
+import com.vincevscode.cointracker.repository.AuthUserRepositoryInterface;
+import com.vincevscode.cointracker.repository.PostgresAuthUserRepository;
+import com.vincevscode.cointracker.service.AuthUserQueryService;
 
 @Configuration
 public class ApplicationConfiguration {
@@ -68,5 +71,15 @@ public class ApplicationConfiguration {
     @Bean
     public UserQueryService userQueryService(UserQueryRepositoryInterface userQueryRepository) {
         return new UserQueryService(userQueryRepository);
+    }
+
+    @Bean
+    public AuthUserRepositoryInterface authUserRepository(JdbcTemplate jdbcTemplate) {
+        return new PostgresAuthUserRepository(jdbcTemplate);
+    }
+
+    @Bean
+    public AuthUserQueryService authUserQueryService(AuthUserRepositoryInterface authUserRepository) {
+        return new AuthUserQueryService(authUserRepository);
     }
 }
