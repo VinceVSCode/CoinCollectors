@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: cointracker
+      POSTGRES_USER: cointracker
+      POSTGRES_PASSWORD: cointracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cointracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      COIN_TRACKER_DB_URL: jdbc:postgresql://postgres:5432/cointracker
+      COIN_TRACKER_DB_USERNAME: cointracker
+      COIN_TRACKER_DB_PASSWORD: cointracker
+      COIN_TRACKER_DB_SEED_ON_START: "true"
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres-data:

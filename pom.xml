@@ -7,7 +7,7 @@
 
   <groupId>com.vincevscode</groupId>
   <artifactId>coin-tracker</artifactId>
-  <version>0.4.4</version>
+  <version>0.5.0</version>
   <name>coin-tracker</name>
 
   <properties>
@@ -91,11 +91,18 @@
         </configuration>
       </plugin>
 
-      <!-- Run SpringBoot tests -->
+      <!-- Repackage into an executable jar -->
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <version>${spring.boot.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
     </plugins>

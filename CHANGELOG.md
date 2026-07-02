@@ -3,6 +3,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.5.0] - YYYY-MM-DD - 2026-07-02
+
+### Added
+- `Dockerfile` (multi-stage Maven build + slim JRE runtime) and `.dockerignore`.
+- `docker-compose.yml` with a Postgres service and the app wired to it via the existing `COIN_TRACKER_DB_*` env vars, ready for local dev with `COIN_TRACKER_DB_SEED_ON_START`.
+- `.github/workflows/ci.yml`: runs `mvn -B verify` against a Postgres service container on push/PR.
+
+### Changed
+- N/A
+
+### Removed
+- N/A
+
+### Fixed
+- Bound the `spring-boot-maven-plugin` `repackage` goal to the `package` phase so `mvn package` produces a runnable executable jar (previously produced a plain jar with no main manifest attribute, since the project doesn't inherit from `spring-boot-starter-parent`).
+
+### Bugs
+- N/A
+
 ## [0.4.4] - YYYY-MM-DD - 2026-07-02
 
 ### Added
