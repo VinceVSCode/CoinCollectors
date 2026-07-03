@@ -3,6 +3,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.5.1] - YYYY-MM-DD - 2026-07-03
+
+### Added
+- `spring-boot-starter-security` and `spring-security-test` dependencies.
+- `security/AuthUserDetails` and `security/AuthUserDetailsService`, adapting the existing `AuthUser`/`AuthUserQueryService` to Spring Security's `UserDetails`/`UserDetailsService` contracts.
+- `config/SecurityConfig`: `PasswordEncoder` (BCrypt) and `DaoAuthenticationProvider` beans, plus a `SecurityFilterChain` that permits all requests for now (no route enforcement yet — that lands with login in a later phase).
+- Real BCrypt password hashes for the 3 seed users (dev-only password `password123`), replacing the previous `NULL` placeholders.
+- Tests for `AuthUserDetails` and `AuthUserDetailsService`.
+
+### Changed
+- `CoinCatalogControllerTest`, `CollectionCommandControllerTest`, `CollectionQueryControllerTest`, and `UserControllerTest` now disable the security filter chain (`@AutoConfigureMockMvc(addFilters = false)`), since Spring Security auto-configuration otherwise locks down `@WebMvcTest` slices by default; these tests exercise controller/business logic, not auth.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Bugs
+- N/A
+
 ## [0.5.0] - YYYY-MM-DD - 2026-07-02
 
 ### Added

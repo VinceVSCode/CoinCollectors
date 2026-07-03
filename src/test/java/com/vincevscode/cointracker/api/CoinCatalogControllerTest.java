@@ -8,6 +8,7 @@ import com.vincevscode.cointracker.view.CoinCatalogView;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -23,6 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(CoinCatalogController.class)
 @Import(RestExceptionHandler.class)
+// Security is added to the classpath as of v0.5.1 but not yet enforced (Phase 2); route protection lands in a later phase.
+@AutoConfigureMockMvc(addFilters = false)
 class CoinCatalogControllerTest {
 
     @Autowired
