@@ -4,92 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coin Tracker</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 24px;
-            background: #f7f7f7;
-            color: #222;
-        }
-
-        h1, h2 {
-            margin-bottom: 12px;
-        }
-
-        .section {
-            background: white;
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 18px;
-            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
-        }
-
-        .row {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-
-        label {
-            font-weight: bold;
-        }
-
-        select, input, button {
-            padding: 8px;
-            font-size: 14px;
-        }
-
-        button {
-            cursor: pointer;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
-
-        th {
-            background: #efefef;
-        }
-
-        .small-input {
-            width: 70px;
-        }
-
-        .status {
-            margin-top: 8px;
-            font-size: 14px;
-        }
-
-        .error {
-            color: #b00020;
-        }
-
-        .success {
-            color: #0a7a2f;
-        }
-    </style>
+    <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-<h1>Coin Tracker</h1>
+<div class="section topbar">
+    <h1>Coin Tracker</h1>
+    <div class="row" style="margin-bottom: 0;">
+        <span class="identity" id="identity"></span>
+        <button id="logoutButton">Log out</button>
+    </div>
+</div>
 
 <div class="section">
-    <h2>User Selection</h2>
-    <div class="row">
-        <label for="userSelect">Choose user:</label>
-        <select id="userSelect"></select>
-        <button id="refreshButton">Refresh Data</button>
+    <h2>Progress</h2>
+    <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
     </div>
-    <div id="userStatus" class="status"></div>
+    <div class="progress-label" id="progressLabel">No data yet.</div>
 </div>
 
 <div class="section">
@@ -141,56 +72,30 @@
     </table>
 </div>
 
+<script src="js/auth.js"></script>
 <script>
-    const userSelect = document.getElementById("userSelect");
-    const refreshButton = document.getElementById("refreshButton");
+    const identity = document.getElementById("identity");
+    const logoutButton = document.getElementById("logoutButton");
     const catalogTableBody = document.getElementById("catalogTableBody");
     const ownedTableBody = document.getElementById("ownedTableBody");
     const missingTableBody = document.getElementById("missingTableBody");
-    const userStatus = document.getElementById("userStatus");
     const catalogStatus = document.getElementById("catalogStatus");
+    const progressFill = document.getElementById("progressFill");
+    const progressLabel = document.getElementById("progressLabel");
 
-    async function fetchJson(url, options = {}) {
-        const response = await fetch(url, options);
+    let currentUserId = null;
 
-        if (!response.ok) {
-            let errorMessage = "Request failed.";
-            try {
-                const errorBody = await response.json();
-                if (errorBody.error) {
-                    errorMessage = errorBody.error;
-                }
-            } catch (ignored) {
-            }
-            throw new Error(errorMessage);
+    // Owned quantities keyed by coinId, used to pre-fill the catalog inputs.
+    let ownedQuantities = {};
+
+    function handleError(error, statusElement) {
+        if (error.status === 401) {
+            CoinAuth.redirectToLogin();
+            return;
         }
-
-        return response.json();
-    }
-
-    async function loadUsers() {
-        userStatus.textContent = "Loading users...";
-        userStatus.className = "status";
-
-        try {
-            const users = await fetchJson("/api/users");
-
-            userSelect.innerHTML = "";
-
-            users.forEach(user => {
-                const option = document.createElement("option");
-                option.value = user.userId;
-                option.textContent = `${user.userId} - ${user.username}`;
-                userSelect.appendChild(option);
-            });
-
-            userStatus.textContent = users.length > 0
-                ? "Users loaded."
-                : "No users found.";
-            userStatus.className = "status success";
-        } catch (error) {
-            userStatus.textContent = error.message;
-            userStatus.className = "status error";
+        if (statusElement) {
+            statusElement.textContent = error.message;
+            statusElement.className = "status error";
         }
     }
 
@@ -198,47 +103,43 @@
         catalogStatus.textContent = "Loading catalog...";
         catalogStatus.className = "status";
 
-        try {
-            const coins = await fetchJson("/api/coins");
-            catalogTableBody.innerHTML = "";
+        const coins = await CoinAuth.fetchJson("/api/coins");
+        catalogTableBody.innerHTML = "";
 
-            coins.forEach(coin => {
-                const row = document.createElement("tr");
+        coins.forEach(coin => {
+            const row = document.createElement("tr");
+            const currentQuantity = ownedQuantities[coin.coinId] || 0;
 
-                row.innerHTML = `
-                    <td>${coin.coinId}</td>
-                    <td>${coin.country}</td>
-                    <td>${coin.denomination}</td>
-                    <td>${coin.year}</td>
-                    <td>
-                        <input type="number" min="0" value="0" class="small-input" id="quantity-${coin.coinId}">
-                    </td>
-                    <td>
-                        <button data-coin-id="${coin.coinId}">Save</button>
-                    </td>
-                `;
+            row.innerHTML = `
+                <td>${coin.coinId}</td>
+                <td>${coin.country}</td>
+                <td>${coin.denomination}</td>
+                <td>${coin.year}</td>
+                <td>
+                    <input type="number" min="0" value="${currentQuantity}" class="small-input" id="quantity-${coin.coinId}">
+                </td>
+                <td>
+                    <button data-coin-id="${coin.coinId}">Save</button>
+                </td>
+            `;
 
-                const button = row.querySelector("button");
-                button.addEventListener("click", () => updateQuantity(coin.coinId));
+            row.querySelector("button").addEventListener("click", () => updateQuantity(coin.coinId));
+            catalogTableBody.appendChild(row);
+        });
 
-                catalogTableBody.appendChild(row);
-            });
-
-            catalogStatus.textContent = "Catalog loaded.";
-            catalogStatus.className = "status success";
-        } catch (error) {
-            catalogStatus.textContent = error.message;
-            catalogStatus.className = "status error";
-        }
+        catalogStatus.textContent = "Catalog loaded.";
+        catalogStatus.className = "status success";
     }
 
     async function loadOwnedCoins() {
-        const userId = userSelect.value;
-        const ownedCoins = await fetchJson(`/api/users/${userId}/owned-coins`);
+        const ownedCoins = await CoinAuth.fetchJson(`/api/users/${currentUserId}/owned-coins`);
 
+        ownedQuantities = {};
         ownedTableBody.innerHTML = "";
 
         ownedCoins.forEach(coin => {
+            ownedQuantities[coin.coinId] = coin.quantity;
+
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${coin.coinId}</td>
@@ -249,11 +150,12 @@
             `;
             ownedTableBody.appendChild(row);
         });
+
+        return ownedCoins.length;
     }
 
     async function loadMissingCoins() {
-        const userId = userSelect.value;
-        const missingCoins = await fetchJson(`/api/users/${userId}/missing-coins`);
+        const missingCoins = await CoinAuth.fetchJson(`/api/users/${currentUserId}/missing-coins`);
 
         missingTableBody.innerHTML = "";
 
@@ -267,22 +169,29 @@
             `;
             missingTableBody.appendChild(row);
         });
+
+        return missingCoins.length;
     }
 
-    async function loadAllData() {
-        if (!userSelect.value) {
-            return;
-        }
+    function renderProgress(ownedCount, missingCount) {
+        const total = ownedCount + missingCount;
+        const percent = total > 0 ? Math.round((ownedCount / total) * 100) : 0;
 
-        await Promise.all([
-            loadCatalog(),
+        progressFill.style.width = percent + "%";
+        progressLabel.textContent = total > 0
+            ? `${ownedCount} of ${total} coins collected (${percent}%).`
+            : "No coins in the catalog yet.";
+    }
+
+    async function loadCollection() {
+        const [ownedCount, missingCount] = await Promise.all([
             loadOwnedCoins(),
             loadMissingCoins()
         ]);
+        renderProgress(ownedCount, missingCount);
     }
 
     async function updateQuantity(coinId) {
-        const userId = userSelect.value;
         const input = document.getElementById(`quantity-${coinId}`);
         const quantity = Number(input.value);
 
@@ -290,31 +199,41 @@
         catalogStatus.className = "status";
 
         try {
-            await fetchJson(`/api/users/${userId}/collection/${coinId}`, {
+            await CoinAuth.fetchJson(`/api/users/${currentUserId}/collection/${coinId}`, {
                 method: "PUT",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ quantity })
             });
 
             catalogStatus.textContent = `Saved quantity ${quantity} for coin ${coinId}.`;
             catalogStatus.className = "status success";
 
-            await loadOwnedCoins();
-            await loadMissingCoins();
+            await loadCollection();
         } catch (error) {
-            catalogStatus.textContent = error.message;
-            catalogStatus.className = "status error";
+            handleError(error, catalogStatus);
         }
     }
 
-    refreshButton.addEventListener("click", loadAllData);
-    userSelect.addEventListener("change", loadAllData);
+    logoutButton.addEventListener("click", () => CoinAuth.logout());
 
     async function initializePage() {
-        await loadUsers();
-        await loadAllData();
+        let me;
+        try {
+            me = await CoinAuth.getMe();
+        } catch (error) {
+            CoinAuth.redirectToLogin();
+            return;
+        }
+
+        currentUserId = me.userId;
+        identity.textContent = `Signed in as ${me.username} (${me.role})`;
+
+        try {
+            await loadCollection();
+            await loadCatalog();
+        } catch (error) {
+            handleError(error, catalogStatus);
+        }
     }
 
     initializePage();

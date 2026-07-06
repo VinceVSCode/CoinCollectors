@@ -1,0 +1,132 @@
+/* v0.6.2: Shared styles for Coin Tracker pages. */
+body {
+    font-family: Arial, sans-serif;
+    margin: 24px;
+    background: #f7f7f7;
+    color: #222;
+}
+
+h1, h2 {
+    margin-bottom: 12px;
+}
+
+.section {
+    background: white;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+
+.row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+label {
+    font-weight: bold;
+}
+
+select, input, button {
+    padding: 8px;
+    font-size: 14px;
+}
+
+button {
+    cursor: pointer;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background: #efefef;
+}
+
+.small-input {
+    width: 70px;
+}
+
+.status {
+    margin-top: 8px;
+    font-size: 14px;
+}
+
+.error {
+    color: #b00020;
+}
+
+.success {
+    color: #0a7a2f;
+}
+
+/* Auth pages */
+.auth-card {
+    max-width: 360px;
+    margin: 60px auto;
+}
+
+.auth-card .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.auth-card input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.auth-card button {
+    width: 100%;
+}
+
+.auth-links {
+    margin-top: 12px;
+    font-size: 14px;
+}
+
+/* Top bar */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.topbar .identity {
+    font-size: 14px;
+}
+
+/* Progress bar */
+.progress-track {
+    background: #e6e6e6;
+    border-radius: 6px;
+    height: 22px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.progress-fill {
+    background: #0a7a2f;
+    height: 100%;
+    width: 0;
+    transition: width 0.3s ease;
+}
+
+.progress-label {
+    margin-top: 6px;
+    font-size: 14px;
+}

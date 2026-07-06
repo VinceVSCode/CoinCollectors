@@ -3,6 +3,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.6.2] - YYYY-MM-DD - 2026-07-07
+
+### Added
+- `login.html` and `register.html` pages, plus a shared `js/auth.js` (session-aware `fetchJson` with automatic CSRF header + `getMe`/`logout`) and a shared `css/app.css`.
+- A "Progress" section on the main page showing owned-vs-catalog completion as a bar and percentage (computed client-side from owned/missing counts).
+
+### Changed
+- `index.html` reworked to be session-aware: removed the free-pick user dropdown; the page now loads the logged-in user via `GET /api/auth/me`, operates only on that user's collection, pre-fills catalog quantity inputs from what they own, shows a logout button, and redirects to `login.html` on any 401.
+- `SecurityConfig` permits the new `/login.html` and `/register.html` pages.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Bugs
+- N/A
+
 ## [0.6.1] - YYYY-MM-DD - 2026-07-07
 
 ### Added
