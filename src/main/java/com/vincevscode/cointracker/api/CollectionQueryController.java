@@ -12,6 +12,7 @@ import com.vincevscode.cointracker.query.SortDirection;
 import com.vincevscode.cointracker.service.CollectionTrackingService;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,6 +31,7 @@ public class CollectionQueryController {
     }
 
     @GetMapping("/owned-coins")
+    @PreAuthorize("#userId == authentication.principal.userId or hasRole('ADMIN')")
     public Object getOwnedCoinsForUser(
             @PathVariable("userId") int userId,
             @RequestParam(name = "country", required = false) String country,
@@ -65,6 +67,7 @@ public class CollectionQueryController {
     }
 
     @GetMapping("/missing-coins")
+    @PreAuthorize("#userId == authentication.principal.userId or hasRole('ADMIN')")
     public Object getMissingCoinsForUser(
             @PathVariable("userId") int userId,
             @RequestParam(name = "country", required = false) String country,

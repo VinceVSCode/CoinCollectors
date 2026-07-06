@@ -3,6 +3,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.6.1] - YYYY-MM-DD - 2026-07-07
+
+### Added
+- Method-level authorization (`@EnableMethodSecurity` + `@PreAuthorize`): collection read/write endpoints are now restricted to the owning user or an ADMIN; `GET /api/users` is ADMIN-only and `GET /api/users/{userId}` is self-or-admin.
+- Owner/admin/forbidden/unauthenticated test coverage across all four data controllers, plus an `AuthTestSupport` helper for authenticating MockMvc requests as a specific `AuthUser` principal.
+
+### Changed
+- Controller tests now run against the real `SecurityConfig` filter chain (replacing the temporary `@AutoConfigureMockMvc(addFilters = false)` workaround introduced in v0.5.1).
+
+### Removed
+- N/A
+
+### Fixed
+- `CollectionQueryControllerTest.getOwnedCoinsForUser_shouldAcceptFilterSortAndPagingParameters` asserted a bare-array shape while the endpoint returns a `PagedResponse` wrapper when paging params are supplied; the assertion now matches the wrapper.
+
+### Bugs
+- N/A
+
 ## [0.6.0] - YYYY-MM-DD - 2026-07-07
 
 ### Added
