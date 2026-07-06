@@ -1,8 +1,9 @@
 -- Dev-only seed accounts, password for all three is "password123". Never used in production.
-INSERT INTO users (id, username, password_hash, role, is_active) VALUES
-    (1, 'vince', '$2a$10$VD9WWdtJLCs7NMeaZRHG1uf69vJb2bLsRutQkR/CZQz4b2e3rnvLm', 'ADMIN', TRUE),
-    (2, 'alex', '$2a$10$5HORknBKFVdRcnjEBMzBUemN/0MTLcnA53jAzZxEiQLkQfK5gVI3q', 'USER', TRUE),
-    (3, 'maria', '$2a$10$DJ7vqjwORKgmk/XqiFir2uMJLeH5OSMc/fVAgbkgGQjGWv3SpnBme', 'USER', TRUE);
+-- IDs are auto-generated (users_id_seq, from V4) in insertion order: vince=1, alex=2, maria=3.
+INSERT INTO users (username, password_hash, role, is_active) VALUES
+    ('vince', '$2a$10$VD9WWdtJLCs7NMeaZRHG1uf69vJb2bLsRutQkR/CZQz4b2e3rnvLm', 'ADMIN', TRUE),
+    ('alex', '$2a$10$5HORknBKFVdRcnjEBMzBUemN/0MTLcnA53jAzZxEiQLkQfK5gVI3q', 'USER', TRUE),
+    ('maria', '$2a$10$DJ7vqjwORKgmk/XqiFir2uMJLeH5OSMc/fVAgbkgGQjGWv3SpnBme', 'USER', TRUE);
 INSERT INTO coins (id, country, denomination, year) VALUES
     (1, 'Bulgaria', '1 Lev', 2002),
     (2, 'Germany', '1 Euro', 2010),

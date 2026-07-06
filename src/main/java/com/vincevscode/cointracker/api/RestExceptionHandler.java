@@ -3,6 +3,7 @@ package com.vincevscode.cointracker.api;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -22,5 +23,11 @@ public class RestExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleHttpMessageNotReadableException(HttpMessageNotReadableException exception) {
         return Map.of("error", "Request body is missing or invalid.");
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Map<String, String> handleAuthenticationException(AuthenticationException exception) {
+        return Map.of("error", "Invalid username or password.");
     }
 }

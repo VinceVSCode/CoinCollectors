@@ -3,6 +3,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.6.0] - YYYY-MM-DD - 2026-07-07
+
+### Added
+- `POST /api/auth/register` (public self-registration), `POST /api/auth/login`, `POST /api/auth/logout`, and `GET /api/auth/me`, backed by a new `AuthController`.
+- `UserRegistrationService` (validates username/password, hashes with BCrypt, defaults new accounts to USER + active) and `AuthUserRepositoryInterface.createAuthUser(...)`.
+- `RegisterRequest`, `LoginRequest`, and `AuthResponse` DTOs.
+- `V4__users_id_generated.sql`: auto-generates `users.id` via a sequence, so registration no longer needs to supply an id.
+- Session-cookie authentication: every route now requires authentication except register/login and static assets; unauthenticated/forbidden requests return JSON via `JsonAuthenticationEntryPoint`/`JsonAccessDeniedHandler`.
+- CSRF protection via a cookie token (`CookieCsrfTokenRepository` + `SpaCsrfTokenRequestHandler` + `CsrfCookieFilter`) suited to the JS frontend.
+
+### Changed
+- `RestExceptionHandler` maps `AuthenticationException` to 401.
+- Seed data no longer hard-codes user ids (relies on the new sequence); insertion order still yields vince=1, alex=2, maria=3.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Bugs
+- N/A
+
 ## [0.5.1] - YYYY-MM-DD - 2026-07-03
 
 ### Added
