@@ -3,6 +3,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.7.0] - YYYY-MM-DD - 2026-07-07
+
+### Added
+- `GET /api/users/{userId}/progress` (self-or-admin) returning a new `CollectionProgressView` (userId, totalCoinsInCatalog, ownedCoinCount, missingCoinCount, percentageComplete).
+- `CollectionTrackingService.getCollectionProgress(userId)`, reusing the existing owned/missing count methods and guarding against a divide-by-zero on an empty catalog (percentage rounded to one decimal).
+- Tests: `CollectionProgressViewTest`, a mock-based `CollectionTrackingServiceProgressTest` (empty catalog, full, partial rounding, invalid id), and progress owner/forbidden/unauthenticated cases in `CollectionQueryControllerTest`.
+
+### Changed
+- The frontend Progress bar now reads the authoritative `/progress` endpoint instead of computing the percentage client-side.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Bugs
+- N/A
+
 ## [0.6.2] - YYYY-MM-DD - 2026-07-07
 
 ### Added

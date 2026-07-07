@@ -8,6 +8,7 @@ import com.vincevscode.cointracker.query.OwnedCoinFilter;
 import com.vincevscode.cointracker.query.OwnedCoinQuery;
 import com.vincevscode.cointracker.query.PageRequest;
 import com.vincevscode.cointracker.repository.CollectionEntryRepositoryInterface;
+import com.vincevscode.cointracker.view.CollectionProgressView;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
 import org.springframework.transaction.annotation.Transactional;
@@ -196,6 +197,27 @@ public class CollectionTrackingService {
         validateMissingCoinFilter(filter);
 
         return collectionEntryRepository.countMissingCoinsForUser(userId, filter);
+    }
+
+    @Transactional(readOnly = true)
+    public CollectionProgressView getCollectionProgress(int userId) {
+        validateUserId(userId);
+
+        long ownedCoinCount = collectionEntryRepository.countOwnedCoinsForUser(userId, null);
+        long missingCoinCount = collectionEntryRepository.countMissingCoinsForUser(userId, null);
+        long totalCoinsInCatalog = ownedCoinCount + missingCoinCount;
+
+        double percentageComplete = totalCoinsInCatalog == 0
+                ? 0.0
+                : Math.round((ownedCoinCount * 1000.0) / totalCoinsInCatalog) / 10.0;
+
+        return new CollectionProgressView(
+                userId,
+                totalCoinsInCatalog,
+                ownedCoinCount,
+                missingCoinCount,
+                percentageComplete
+        );
     }
 
 }

@@ -10,6 +10,7 @@ import com.vincevscode.cointracker.query.OwnedCoinSortField;
 import com.vincevscode.cointracker.query.PageRequest;
 import com.vincevscode.cointracker.query.SortDirection;
 import com.vincevscode.cointracker.service.CollectionTrackingService;
+import com.vincevscode.cointracker.view.CollectionProgressView;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -98,6 +99,12 @@ public class CollectionQueryController {
         }
 
         return collectionTrackingService.getMissingCoinsForUser(userId, query);
+    }
+
+    @GetMapping("/progress")
+    @PreAuthorize("#userId == authentication.principal.userId or hasRole('ADMIN')")
+    public CollectionProgressView getCollectionProgress(@PathVariable("userId") int userId) {
+        return collectionTrackingService.getCollectionProgress(userId);
     }
 
     private OwnedCoinFilter buildOwnedCoinFilter(

@@ -173,22 +173,21 @@
         return missingCoins.length;
     }
 
-    function renderProgress(ownedCount, missingCount) {
-        const total = ownedCount + missingCount;
-        const percent = total > 0 ? Math.round((ownedCount / total) * 100) : 0;
+    async function loadProgress() {
+        const progress = await CoinAuth.fetchJson(`/api/users/${currentUserId}/progress`);
 
-        progressFill.style.width = percent + "%";
-        progressLabel.textContent = total > 0
-            ? `${ownedCount} of ${total} coins collected (${percent}%).`
+        progressFill.style.width = progress.percentageComplete + "%";
+        progressLabel.textContent = progress.totalCoinsInCatalog > 0
+            ? `${progress.ownedCoinCount} of ${progress.totalCoinsInCatalog} coins collected (${progress.percentageComplete}%).`
             : "No coins in the catalog yet.";
     }
 
     async function loadCollection() {
-        const [ownedCount, missingCount] = await Promise.all([
+        await Promise.all([
             loadOwnedCoins(),
-            loadMissingCoins()
+            loadMissingCoins(),
+            loadProgress()
         ]);
-        renderProgress(ownedCount, missingCount);
     }
 
     async function updateQuantity(coinId) {
