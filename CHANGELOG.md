@@ -3,6 +3,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.7.1] - YYYY-MM-DD - 2026-07-07
+
+### Added
+- Admin user management: `AdminUserController` (`hasRole('ADMIN')`) with `GET /api/admin/users`, `PATCH /api/admin/users/{userId}/role`, and `PATCH /api/admin/users/{userId}/active`, backed by a new `UserManagementService` and `AdminUserView`.
+- `AuthUserRepositoryInterface` write/query operations: `getAllAuthUsers`, `updateRole`, `updateActive`, and `countActiveAdmins`.
+- A last-active-admin safety guard: demoting or deactivating the only remaining active admin is rejected with a 400.
+- `admin.html` management page (list users, promote/demote, activate/deactivate) plus an "Admin" link shown to admins on the main page.
+- Tests for the service (incl. the guard), the controller (admin/non-admin/unauthenticated + CSRF), and the new repository methods.
+
+### Changed
+- `PostgresAuthUserRepository` now shares a single row mapper across its query methods.
+- `SecurityConfig` permits the new `/admin.html` page.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Bugs
+- N/A
+
 ## [0.7.0] - YYYY-MM-DD - 2026-07-07
 
 ### Added

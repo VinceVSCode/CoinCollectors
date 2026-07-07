@@ -11,6 +11,7 @@
     <h1>Coin Tracker</h1>
     <div class="row" style="margin-bottom: 0;">
         <span class="identity" id="identity"></span>
+        <a href="admin.html" id="adminLink" style="display: none;">Admin</a>
         <button id="logoutButton">Log out</button>
     </div>
 </div>
@@ -226,6 +227,10 @@
 
         currentUserId = me.userId;
         identity.textContent = `Signed in as ${me.username} (${me.role})`;
+
+        if (me.role === "ADMIN") {
+            document.getElementById("adminLink").style.display = "";
+        }
 
         try {
             await loadCollection();
