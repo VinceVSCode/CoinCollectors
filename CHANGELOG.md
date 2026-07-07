@@ -3,6 +3,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.7.3] - YYYY-MM-DD - 2026-07-08
+
+### Added
+- `AccountStatusFilter`: authenticated API requests are re-checked against the user's current active status, so an admin deactivation takes effect on the user's very next request instead of only at session expiry. The filter blocks only on a positive "inactive" finding (a missing lookup falls through), skips static pages and the login/register/logout endpoints, and returns a 401 `{"error":"Your account has been deactivated."}`.
+- `AccountStatusFilterTest` covering deactivated/active/unknown/unauthenticated principals and the skipped paths.
+
+### Changed
+- `SecurityConfig` registers the new filter after the CSRF cookie filter.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Bugs
+- N/A
+
 ## [0.7.2] - YYYY-MM-DD - 2026-07-07
 
 ### Added

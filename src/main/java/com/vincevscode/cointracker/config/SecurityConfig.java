@@ -2,6 +2,7 @@
 // v0.6.0: Require authentication for all routes except register/login/static assets; CSRF via cookie for the JS frontend.
 package com.vincevscode.cointracker.config;
 
+import com.vincevscode.cointracker.security.AccountStatusFilter;
 import com.vincevscode.cointracker.security.AuthUserDetailsService;
 import com.vincevscode.cointracker.security.CsrfCookieFilter;
 import com.vincevscode.cointracker.security.JsonAccessDeniedHandler;
@@ -65,7 +66,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            SecurityContextRepository securityContextRepository
+            SecurityContextRepository securityContextRepository,
+            AuthUserQueryService authUserQueryService
     ) throws Exception {
         http
                 .securityContext(securityContext -> securityContext.securityContextRepository(securityContextRepository))
@@ -83,7 +85,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint(new JsonAuthenticationEntryPoint())
                         .accessDeniedHandler(new JsonAccessDeniedHandler())
                 )
-                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class);
+                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
+                .addFilterAfter(new AccountStatusFilter(authUserQueryService), CsrfCookieFilter.class);
 
         return http.build();
     }
