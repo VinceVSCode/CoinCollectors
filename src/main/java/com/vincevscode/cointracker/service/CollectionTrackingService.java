@@ -11,6 +11,7 @@ import com.vincevscode.cointracker.repository.CollectionEntryRepositoryInterface
 import com.vincevscode.cointracker.view.CollectionProgressView;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -46,7 +47,13 @@ public class CollectionTrackingService {
             return updatedEntry;
         }
 
-        return collectionEntryRepository.addCollectionEntry(userId, coinId, quantity);
+        try {
+            return collectionEntryRepository.addCollectionEntry(userId, coinId, quantity);
+        } catch (DataIntegrityViolationException exception) {
+            // The coin_id foreign key is the only user-supplied reference that can be invalid here
+            // (userId comes from the authenticated principal), so surface it as a clean domain error.
+            throw new IllegalArgumentException("Coin was not found.");
+        }
     }
 
     @Transactional(readOnly = true)

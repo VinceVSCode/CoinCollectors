@@ -3,6 +3,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.7.2] - YYYY-MM-DD - 2026-07-07
+
+### Added
+- Adversarial/penetration test suites: `CollectionTrackingServiceSecurityTest`, `UserRegistrationServiceSecurityTest`, and `AuthControllerSecurityTest` — covering the fixed foreign-key case, privilege-escalation/mass-assignment attempts, credential-error non-enumeration, and CSRF enforcement.
+
+### Changed
+- N/A
+
+### Removed
+- N/A
+
+### Fixed
+- `PUT /api/users/{userId}/collection/{coinId}` with a non-existent `coinId` returned a raw 500 (unhandled foreign-key `DataIntegrityViolationException` leaking the internal error and path); it now returns a clean 400 `{"error":"Coin was not found."}`.
+
+### Security notes (verified, no change needed)
+- Registration hardcodes `UserRole.USER`; injected `role`/`id`/`active` fields in the request body are unbound and ignored (no privilege escalation via mass assignment).
+- Login returns an identical generic message for wrong password and unknown username (no user enumeration).
+- All SQL uses parameterized `JdbcTemplate` queries; an injection payload in the username is treated as a literal.
+- Over-length passwords (>72 bytes, BCrypt's limit) are rejected with a 400 rather than silently truncated.
+
+### Bugs
+- N/A
+
 ## [0.7.1] - YYYY-MM-DD - 2026-07-07
 
 ### Added
