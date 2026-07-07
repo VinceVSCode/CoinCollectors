@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Tracker - Login</title>
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="section auth-card">
+    <h1>Coin Tracker</h1>
+    <h2>Log in</h2>
+    <form id="loginForm">
+        <div class="field">
+            <label for="username">Username</label>
+            <input type="text" id="username" autocomplete="username" required>
+        </div>
+        <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit">Log in</button>
+    </form>
+    <div id="status" class="status"></div>
+    <div class="auth-links">
+        No account? <a href="register.html">Register</a>
+    </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+    const form = document.getElementById("loginForm");
+    const status = document.getElementById("status");
+
+    // Loading this page through the filter chain seeds the XSRF-TOKEN cookie,
+    // so the login POST below can send the matching header.
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        status.textContent = "Logging in...";
+        status.className = "status";
+
+        try {
+            await CoinAuth.fetchJson("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: document.getElementById("username").value,
+                    password: document.getElementById("password").value
+                })
+            });
+
+            window.location.href = "index.html";
+        } catch (error) {
+            status.textContent = error.message;
+            status.className = "status error";
+        }
+    });
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@ package com.vincevscode.cointracker.api;
 
 import com.vincevscode.cointracker.service.UserQueryService;
 import com.vincevscode.cointracker.view.UserView;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,11 +21,13 @@ public class UserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public List<UserView> getUsers() {
         return userQueryService.getUsers();
     }
 
     @GetMapping("/{userId}")
+    @PreAuthorize("#userId == authentication.principal.userId or hasRole('ADMIN')")
     public UserView getUserById(@PathVariable("userId") int userId) {
         UserView user = userQueryService.getUserById(userId);
 

@@ -1,8 +1,12 @@
 // v0.4.0: Controller tests for collection query endpoints.
+// v0.6.1: Runs with the real SecurityConfig so @PreAuthorize ownership rules are exercised.
 package com.vincevscode.cointracker.api;
 
+import com.vincevscode.cointracker.config.SecurityConfig;
+import com.vincevscode.cointracker.model.UserRole;
 import com.vincevscode.cointracker.query.MissingCoinQuery;
 import com.vincevscode.cointracker.query.OwnedCoinQuery;
+import com.vincevscode.cointracker.service.AuthUserQueryService;
 import com.vincevscode.cointracker.service.CollectionTrackingService;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
@@ -16,6 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static com.vincevscode.cointracker.support.AuthTestSupport.asUser;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,7 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(CollectionQueryController.class)
-@Import(RestExceptionHandler.class)
+@Import({RestExceptionHandler.class, SecurityConfig.class})
 class CollectionQueryControllerTest {
 
     @Autowired
@@ -31,6 +36,10 @@ class CollectionQueryControllerTest {
 
     @MockBean
     private CollectionTrackingService collectionTrackingService;
+
+    // Only needed to satisfy SecurityConfig's UserDetailsService bean dependency in this slice.
+    @MockBean
+    private AuthUserQueryService authUserQueryService;
 
     @Test
     void getOwnedCoinsForUser_shouldReturnOwnedCoinsAsJson() throws Exception {
@@ -40,7 +49,7 @@ class CollectionQueryControllerTest {
                         new OwnedCoinView(2, "Germany", "1 Euro", 2010, 1)
                 ));
 
-        mockMvc.perform(get("/api/users/1/owned-coins"))
+        mockMvc.perform(get("/api/users/1/owned-coins").with(asUser(1, UserRole.USER)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("application/json"))
                 .andExpect(jsonPath("$[0].coinId").value(1))
@@ -63,6 +72,7 @@ class CollectionQueryControllerTest {
 
         mockMvc.perform(
                         get("/api/users/1/owned-coins")
+                                .with(asUser(1, UserRole.USER))
                                 .param("country", "Bulgaria")
                                 .param("minYear", "2000")
                                 .param("maxYear", "2010")
@@ -73,7 +83,7 @@ class CollectionQueryControllerTest {
                                 .param("size", "10")
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].coinId").value(1));
+                .andExpect(jsonPath("$.items[0].coinId").value(1));
 
         verify(collectionTrackingService).getOwnedCoinsForUser(eq(1), ArgumentMatchers.<OwnedCoinQuery>any());
     }
@@ -86,7 +96,7 @@ class CollectionQueryControllerTest {
                         new MissingCoinView(4, "Italy", "50 Centesimi", 2007)
                 ));
 
-        mockMvc.perform(get("/api/users/1/missing-coins"))
+        mockMvc.perform(get("/api/users/1/missing-coins").with(asUser(1, UserRole.USER)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("application/json"))
                 .andExpect(jsonPath("$[0].coinId").value(3))
@@ -98,9 +108,31 @@ class CollectionQueryControllerTest {
     }
 
     @Test
+    void getOwnedCoinsForUser_shouldAllowAdminToViewAnotherUsersCollection() throws Exception {
+        when(collectionTrackingService.getOwnedCoinsForUser(eq(1), ArgumentMatchers.<OwnedCoinQuery>any()))
+                .thenReturn(List.of(new OwnedCoinView(1, "Bulgaria", "1 Lev", 2002, 2)));
+
+        mockMvc.perform(get("/api/users/1/owned-coins").with(asUser(99, UserRole.ADMIN)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getOwnedCoinsForUser_shouldReturnForbiddenWhenViewingAnotherUsersCollection() throws Exception {
+        mockMvc.perform(get("/api/users/1/owned-coins").with(asUser(2, UserRole.USER)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getOwnedCoinsForUser_shouldReturnUnauthorizedWhenNotLoggedIn() throws Exception {
+        mockMvc.perform(get("/api/users/1/owned-coins"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void getOwnedCoinsForUser_shouldReturnBadRequestWhenPageAndSizeAreIncomplete() throws Exception {
         mockMvc.perform(
                         get("/api/users/1/owned-coins")
+                                .with(asUser(1, UserRole.USER))
                                 .param("page", "1")
                 )
                 .andExpect(status().isBadRequest())
@@ -114,6 +146,7 @@ class CollectionQueryControllerTest {
 
         mockMvc.perform(
                         get("/api/users/1/owned-coins")
+                                .with(asUser(1, UserRole.USER))
                                 .param("page", "0")
                                 .param("size", "10")
                 )
@@ -133,6 +166,7 @@ class CollectionQueryControllerTest {
 
         mockMvc.perform(
                         get("/api/users/1/owned-coins")
+                                .with(asUser(1, UserRole.USER))
                                 .param("page", "1")
                                 .param("size", "10")
                 )
@@ -155,6 +189,7 @@ class CollectionQueryControllerTest {
 
         mockMvc.perform(
                         get("/api/users/1/missing-coins")
+                                .with(asUser(1, UserRole.USER))
                                 .param("page", "2")
                                 .param("size", "5")
                 )

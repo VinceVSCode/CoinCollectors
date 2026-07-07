@@ -5,6 +5,7 @@ import com.vincevscode.cointracker.api.dto.CollectionEntryResponse;
 import com.vincevscode.cointracker.api.dto.SetCoinQuantityRequest;
 import com.vincevscode.cointracker.model.CollectionEntry;
 import com.vincevscode.cointracker.service.CollectionTrackingService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,6 +22,7 @@ public class CollectionCommandController {
     }
 
     @PutMapping("/{coinId}")
+    @PreAuthorize("#userId == authentication.principal.userId or hasRole('ADMIN')")
     public CollectionEntryResponse setCoinQuantity(
             @PathVariable("userId") int userId,
             @PathVariable("coinId") int coinId,

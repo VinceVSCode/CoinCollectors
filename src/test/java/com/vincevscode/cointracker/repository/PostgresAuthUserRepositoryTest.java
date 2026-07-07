@@ -25,7 +25,22 @@ class PostgresAuthUserRepositoryTest {
         repository = new PostgresAuthUserRepository(jdbcTemplate);
 
         clearUsersTable();
+        resetUsersSequence();
         seedUsers();
+    }
+
+    @Test
+    void createAuthUser_shouldInsertAndReturnNewUserWithGeneratedId() {
+        AuthUser createdUser = repository.createAuthUser("newuser", "hashed-password", UserRole.USER, true);
+
+        assertTrue(createdUser.getId() > 0);
+        assertEquals("newuser", createdUser.getUsername());
+        assertEquals("hashed-password", createdUser.getPasswordHash());
+        assertEquals(UserRole.USER, createdUser.getRole());
+        assertTrue(createdUser.isActive());
+
+        AuthUser foundUser = repository.findAuthUserById(createdUser.getId());
+        assertEquals(createdUser, foundUser);
     }
 
     @Test
@@ -93,13 +108,17 @@ class PostgresAuthUserRepositoryTest {
         jdbcTemplate.update("DELETE FROM users");
     }
 
+    private void resetUsersSequence() {
+        jdbcTemplate.execute("ALTER SEQUENCE users_id_seq RESTART WITH 1");
+    }
+
     private void seedUsers() {
         jdbcTemplate.update(
                 """
-                INSERT INTO users (id, username, password_hash, role, is_active)
+                INSERT INTO users (username, password_hash, role, is_active)
                 VALUES
-                    (1, 'vince', 'hashed-password', 'ADMIN', TRUE),
-                    (2, 'alex', 'hashed-password', 'USER', TRUE)
+                    ('vince', 'hashed-password', 'ADMIN', TRUE),
+                    ('alex', 'hashed-password', 'USER', TRUE)
                 """
         );
     }

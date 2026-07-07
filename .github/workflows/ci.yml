@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: cointracker
+          POSTGRES_USER: cointracker
+          POSTGRES_PASSWORD: cointracker
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cointracker"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      COIN_TRACKER_DB_URL: jdbc:postgresql://localhost:5432/cointracker
+      COIN_TRACKER_DB_USERNAME: cointracker
+      COIN_TRACKER_DB_PASSWORD: cointracker
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Build and test
+        run: mvn -B verify
