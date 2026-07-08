@@ -1,4 +1,32 @@
-target
-.git
-.idea
+# Keep the build context minimal: the Dockerfile only needs pom.xml and src/.
+
+# Build output
+target/
+build/
+dist/
+
+# Version control & CI
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# IDE / editor
+.idea/
+*.iml
+.vscode/
+
+# Claude Code tooling (can contain full repo worktrees)
+.claude/
+
+# Docs (not needed to build or run the image)
 *.md
+
+# Docker / compose files (not needed inside the build context)
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# OS files
+.DS_Store
+Thumbs.db
