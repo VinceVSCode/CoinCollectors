@@ -3,6 +3,9 @@ package com.vincevscode.cointracker.view;
 
 import java.util.Objects;
 
+// Row shape for GET /api/coins — same fields as Coin, but kept as a distinct type since it's
+// built straight from a JdbcTemplate row mapper (see PostgresCoinCatalogQueryRepository),
+// decoupling the API/read contract from the Coin domain model.
 public class CoinCatalogView {
     private int coinId;
     private String country;

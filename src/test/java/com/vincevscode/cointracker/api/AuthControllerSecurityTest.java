@@ -26,6 +26,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// Companion to AuthControllerTest's happy-path coverage — this class specifically probes the
+// register endpoint's field allowlisting (RegisterRequest has no role/id/active fields, so
+// Jackson silently drops them) and login's error-message behavior, both hardening measures
+// added during the security/pen-test pass.
 @WebMvcTest(AuthController.class)
 @Import({RestExceptionHandler.class, SecurityConfig.class})
 class AuthControllerSecurityTest {

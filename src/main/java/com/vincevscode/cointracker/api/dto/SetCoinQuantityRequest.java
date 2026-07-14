@@ -2,6 +2,8 @@
 package com.vincevscode.cointracker.api.dto;
 
 public class SetCoinQuantityRequest {
+    // Negative-quantity rejection happens in CollectionTrackingService, not here — this DTO
+    // is purely a deserialization target, not a validation layer.
     private int quantity;
 
     public SetCoinQuantityRequest() {

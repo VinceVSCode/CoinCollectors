@@ -6,6 +6,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 
+/**
+ * Read-only, JdbcTemplate-based backing for {@code GET /api/users} and
+ * {@code GET /api/users/{id}}. Maps straight to {@link UserView} (never {@link com.vincevscode.cointracker.model.AuthUser})
+ * so a password hash can never accidentally end up in an API response from this path.
+ */
 public class PostgresUserQueryRepository implements UserQueryRepositoryInterface {
     private final JdbcTemplate jdbcTemplate;
 

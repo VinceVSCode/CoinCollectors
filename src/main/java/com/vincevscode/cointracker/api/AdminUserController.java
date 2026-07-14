@@ -15,6 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Class-level {@code @PreAuthorize} means every method here is ADMIN-only by default —
+ * no per-method authorization annotation needed unless a future endpoint wants a different
+ * rule. Delegates every mutation's business rule (e.g. can't strand the app with zero admins)
+ * to {@link UserManagementService}; this controller only validates request shape.
+ */
 @RestController
 @RequestMapping("/api/admin/users")
 @PreAuthorize("hasRole('ADMIN')")

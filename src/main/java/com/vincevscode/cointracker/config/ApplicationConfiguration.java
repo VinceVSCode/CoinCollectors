@@ -22,11 +22,22 @@ import com.vincevscode.cointracker.service.UserManagementService;
 import com.vincevscode.cointracker.service.UserRegistrationService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+/**
+ * Central bean wiring for the data-access + service layers: one HikariCP DataSource, one
+ * shared JdbcTemplate, and a repository+service bean pair per read/write concern
+ * (collection tracking, catalog browsing, user queries, auth). Deliberately does NOT wire
+ * {@link com.vincevscode.cointracker.repository.CoinRepositoryInterface} or
+ * {@link com.vincevscode.cointracker.service.CoinCatalogService} — those are the older,
+ * pre-Spring-Boot CRUD path (see that interface's doc) and aren't part of the live app.
+ */
 @Configuration
 public class ApplicationConfiguration {
 
     @Bean
     public DataSource dataSource() {
+        // Config (URL/credentials) comes from required env vars, not application.properties —
+        // keeps secrets out of source control; see docker-compose.yml for the COIN_TRACKER_DB_*
+        // vars this expects, and DatabaseConfig for the fail-fast validation if any are missing.
         DatabaseConfig databaseConfig = DatabaseConfig.fromEnvironment();
 
         HikariDataSource dataSource = new HikariDataSource();

@@ -23,6 +23,8 @@ class CollectionTrackingServiceProgressTest {
         service = new CollectionTrackingService(repository);
     }
 
+    // isNull() matches the `filter` argument getCollectionProgress always passes as null —
+    // it computes totals from the unfiltered owned/missing counts, never a caller-supplied filter.
     private void stubCounts(long owned, long missing) {
         when(repository.countOwnedCoinsForUser(eq(1), isNull())).thenReturn(owned);
         when(repository.countMissingCoinsForUser(eq(1), isNull())).thenReturn(missing);

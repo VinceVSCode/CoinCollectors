@@ -1,6 +1,7 @@
 // v0.3.3: Query object for missing coin screen requests.
 package com.vincevscode.cointracker.query;
 
+// Missing-coins equivalent of CoinCatalogQuery — see that class's doc for the general shape.
 public class MissingCoinQuery {
     private MissingCoinFilter filter;
     private MissingCoinSortField sortField;

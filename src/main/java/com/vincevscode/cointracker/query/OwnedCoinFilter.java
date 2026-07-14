@@ -1,6 +1,11 @@
 // v0.3.3: Filter object for owned coin screen queries.
 package com.vincevscode.cointracker.query;
 
+/**
+ * Same shape as {@link CoinCatalogFilter} plus {@code minQuantity}, since "how many do I
+ * have" is only meaningful once ownership is in scope. See that class's doc for the general
+ * nullable-means-unfiltered convention shared across all three filter types.
+ */
 public class OwnedCoinFilter {
     private String country;
     private String denomination;

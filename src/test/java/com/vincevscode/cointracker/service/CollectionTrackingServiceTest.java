@@ -26,6 +26,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// Integration test (real Postgres via PostgresCollectionEntryRepository), covering the
+// filter/sort/paging behavior end-to-end through the service layer — contrast with
+// CollectionTrackingServiceProgressTest and CollectionTrackingServiceSecurityTest, which mock
+// the repository to isolate pure service-layer logic. See PostgresAuthUserRepositoryTest's
+// class doc for the env/connectivity gotcha this needs a real DB for.
 class CollectionTrackingServiceTest {
     private CollectionTrackingService service;
     private JdbcTemplate jdbcTemplate;

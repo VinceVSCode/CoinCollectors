@@ -23,6 +23,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+// @Import(SecurityConfig.class) runs the REAL filter chain in this @WebMvcTest slice (rather
+// than the addFilters=false shortcut) specifically so the ADMIN-only @PreAuthorize on
+// AdminUserController is actually exercised — a non-admin or anonymous caller must get a real
+// 403/401 from Spring Security, not just "the mock service was never asked."
 @WebMvcTest(AdminUserController.class)
 @Import({RestExceptionHandler.class, SecurityConfig.class})
 class AdminUserControllerTest {

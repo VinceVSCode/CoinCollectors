@@ -3,6 +3,12 @@ package com.vincevscode.cointracker.view;
 
 import java.util.Objects;
 
+/**
+ * Response shape for {@code GET /api/users/{userId}/progress}, assembled by
+ * {@link com.vincevscode.cointracker.service.CollectionTrackingService#getCollectionProgress}
+ * from two COUNT(*) queries rather than loading every entry — {@code totalCoinsInCatalog} is
+ * derived (owned + missing), not queried directly.
+ */
 public class CollectionProgressView {
     private int userId;
     private long totalCoinsInCatalog;

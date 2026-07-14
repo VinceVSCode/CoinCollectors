@@ -9,6 +9,12 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 
 import java.io.IOException;
 
+/**
+ * Wired into {@code SecurityConfig} as the entry point for unauthenticated requests to
+ * protected routes — returns JSON 401 instead of Spring Security's default redirect-to-login
+ * page, which would make no sense for a JSON API. See {@link JsonAccessDeniedHandler} for the
+ * authenticated-but-forbidden (403) counterpart.
+ */
 public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     @Override

@@ -27,6 +27,12 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
+/**
+ * The whole app's authn/authz posture in one place. {@code @EnableMethodSecurity} turns on
+ * {@code @PreAuthorize} for the owner-or-admin checks scattered across the api/ controllers;
+ * everything else here builds the session-cookie login flow and makes sure every error path
+ * returns JSON instead of Spring Security's default HTML (see the security/ package).
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -34,6 +40,8 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+        // BCrypt: salts automatically, deliberately slow (tunable work factor) to resist
+        // brute-force/rainbow-table attacks on a leaked password_hash column.
         return new BCryptPasswordEncoder();
     }
 
@@ -60,6 +68,9 @@ public class SecurityConfig {
 
     @Bean
     public SecurityContextRepository securityContextRepository() {
+        // Persist the authenticated principal in the HttpSession (server-side session-cookie
+        // auth) rather than the stateless default — required so identity survives across
+        // requests for a plain-JS frontend with no JWT/bearer-token handling.
         return new HttpSessionSecurityContextRepository();
     }
 
@@ -72,10 +83,17 @@ public class SecurityConfig {
         http
                 .securityContext(securityContext -> securityContext.securityContextRepository(securityContextRepository))
                 .csrf(csrf -> csrf
+                        // withHttpOnlyFalse: the XSRF-TOKEN cookie must be JS-readable so
+                        // js/auth.js can copy its value into the X-XSRF-TOKEN header on
+                        // state-changing requests — this is the standard double-submit-cookie
+                        // CSRF pattern for a plain-JS frontend with no server-rendered forms.
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
                 )
                 .authorizeHttpRequests(authorize -> authorize
+                        // Only the entry points a not-yet-authenticated user must be able to
+                        // reach are open; everything else (including every /api/** business
+                        // route) requires a session, enforced by anyRequest().authenticated().
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                         .requestMatchers("/", "/index.html", "/login.html", "/register.html", "/admin.html").permitAll()
@@ -85,6 +103,9 @@ public class SecurityConfig {
                         .authenticationEntryPoint(new JsonAuthenticationEntryPoint())
                         .accessDeniedHandler(new JsonAccessDeniedHandler())
                 )
+                // Filter order matters: CsrfCookieFilter must run (forcing token generation)
+                // before AccountStatusFilter can meaningfully act on an authenticated principal;
+                // both run after Spring Security's own BasicAuthenticationFilter in the chain.
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
                 .addFilterAfter(new AccountStatusFilter(authUserQueryService), CsrfCookieFilter.class);
 

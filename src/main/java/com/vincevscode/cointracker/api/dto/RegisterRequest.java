@@ -1,6 +1,9 @@
 // v0.6.0: Request DTO for self-service user registration.
 package com.vincevscode.cointracker.api.dto;
 
+// Deliberately has ONLY username+password fields — no role or active flag can be supplied
+// here, which is what makes UserRegistrationService's "always USER, always active" behavior
+// enforceable rather than just a convention a caller could bypass by adding extra JSON fields.
 public class RegisterRequest {
     private String username;
     private String password;

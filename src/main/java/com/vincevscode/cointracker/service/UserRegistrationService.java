@@ -8,7 +8,16 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Public self-registration flow ({@code POST /api/auth/register}). Deliberately does NOT
+ * accept role or active-status from the caller — every new account is hard-coded to
+ * {@code UserRole.USER} + active, which forecloses a mass-assignment attack where a client
+ * tries to register themselves straight in as an ADMIN (confirmed safe in the
+ * {@code UserRegistrationServiceSecurityTest} pen-test pass).
+ */
 public class UserRegistrationService {
+    // BCrypt truncates/rejects beyond 72 bytes; this floor is purely a UX/strength minimum,
+    // not related to BCrypt's own limit (see the >72-byte case verified in the security tests).
     private static final int MINIMUM_PASSWORD_LENGTH = 8;
 
     private final AuthUserRepositoryInterface authUserRepository;
@@ -38,6 +47,9 @@ public class UserRegistrationService {
         try {
             return authUserRepository.createAuthUser(username, passwordHash, UserRole.USER, true);
         } catch (DataIntegrityViolationException exception) {
+            // Belt-and-suspenders: the pre-check above has a race window between two concurrent
+            // registrations with the same username, so also catch the DB's unique-constraint
+            // violation and translate it to the same clean 400 instead of a raw 500.
             throw new IllegalArgumentException("Username is already taken.");
         }
     }

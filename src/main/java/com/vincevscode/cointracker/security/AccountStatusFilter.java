@@ -16,6 +16,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * Closes the gap left by session-cookie auth's authorities-snapshot-at-login behavior: without
+ * this filter, deactivating a user (via {@code UserManagementService}) wouldn't take effect
+ * until their session naturally expired, since {@link AuthUserDetails#isEnabled()} is only
+ * consulted by Spring Security at login time, not on every request. Runs once per request for
+ * already-authenticated users and re-checks the live `is_active` column directly.
+ */
 public class AccountStatusFilter extends OncePerRequestFilter {
     private final AuthUserQueryService authUserQueryService;
 

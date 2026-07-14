@@ -22,6 +22,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * The three read endpoints for a user's own collection view: what they own, what they're
+ * missing from the catalog, and their completion progress. All three share the same
+ * owner-or-admin @PreAuthorize rule as {@link CollectionCommandController}. The owned/missing
+ * endpoints follow the same "Object return type: paged envelope vs plain list" pattern as
+ * {@link CoinCatalogController#getCoins} — see that class's comment for why.
+ */
 @RestController
 @RequestMapping("/api/users/{userId}")
 public class CollectionQueryController {

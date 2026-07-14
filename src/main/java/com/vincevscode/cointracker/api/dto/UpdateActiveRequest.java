@@ -2,6 +2,8 @@
 package com.vincevscode.cointracker.api.dto;
 
 public class UpdateActiveRequest {
+    // Boolean (boxed), not boolean: lets the controller distinguish "active omitted from the
+    // JSON body" (null -> reject with a clear error) from "explicitly set to false".
     private Boolean active;
 
     public UpdateActiveRequest() {

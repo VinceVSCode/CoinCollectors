@@ -3,6 +3,9 @@ package com.vincevscode.cointracker.api.dto;
 
 import java.util.List;
 
+// Generic over T so one class serves every list endpoint (coins, owned coins, missing coins);
+// totalCount is a separate COUNT(*) query result, not items.size(), since items is just the
+// current page — see CoinCatalogController/CollectionQueryController for where both are fetched.
 public class PagedResponse<T> {
     private List<T> items;
     private long totalCount;

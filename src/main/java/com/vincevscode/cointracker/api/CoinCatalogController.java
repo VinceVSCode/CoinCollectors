@@ -13,6 +13,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Catalog browse endpoint. Reachable by any authenticated user (no @PreAuthorize — the
+ * catalog itself isn't per-user data, unlike collection entries). The query-string ->
+ * filter/sort/page object translation here mirrors {@link CollectionQueryController} closely;
+ * kept duplicated rather than shared since the two controllers' filter/sort types
+ * (CoinCatalogFilter vs Owned/MissingCoinFilter) are structurally similar but not the same type.
+ */
 @RestController
 @RequestMapping("/api/coins")
 public class CoinCatalogController {
@@ -22,6 +29,9 @@ public class CoinCatalogController {
         this.coinCatalogQueryService = coinCatalogQueryService;
     }
 
+    // Return type is Object, not a fixed DTO: page+size both present -> paged envelope with a
+    // total count; either omitted -> plain list. Lets simple/unpaged callers (and existing
+    // frontend code) skip the envelope entirely rather than always paying for a count query.
     @GetMapping
     public Object getCoins(
             @RequestParam(name = "country", required = false) String country,
@@ -96,6 +106,10 @@ public class CoinCatalogController {
             return null;
         }
 
+        // valueOf throws IllegalArgumentException on an unrecognized name, which
+        // RestExceptionHandler turns into a 400 — an unknown sort field is a client error,
+        // not a 500, and this also means only the fixed enum values ever reach the SQL
+        // ORDER BY clause (see PostgresCoinCatalogQueryRepository's injection-safety note).
         return CoinCatalogSortField.valueOf(sortField.trim().toUpperCase());
     }
 

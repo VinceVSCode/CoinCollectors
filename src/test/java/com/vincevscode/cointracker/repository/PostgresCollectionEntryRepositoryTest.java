@@ -17,12 +17,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// Integration test against a real Postgres — see PostgresAuthUserRepositoryTest's class doc
+// for the env/connectivity gotcha on this dev machine.
 class PostgresCollectionEntryRepositoryTest {
     private PostgresCollectionEntryRepository repository;
     private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
+        // Left in deliberately: printing the resolved JDBC URL makes it obvious at a glance
+        // which database a failing run actually hit (host Postgres vs. dockerized one).
         System.out.println("DB URL: " + DatabaseConfig.fromEnvironment().getUrl());
         jdbcTemplate = createJdbcTemplate();
         runMigrations();

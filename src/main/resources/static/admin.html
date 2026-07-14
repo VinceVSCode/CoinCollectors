@@ -59,6 +59,11 @@
         usersTableBody.innerHTML = "";
 
         users.forEach(user => {
+            // Only USER<->ADMIN toggle offered (no role picker) since those are the only two
+            // UserRole values. No client-side check preventing an admin from demoting/
+            // deactivating themselves or the last remaining admin — that guard lives entirely
+            // server-side in UserManagementService, which rejects the request with a 400 if
+            // it would strand the app with zero active admins.
             const nextRole = user.role === "ADMIN" ? "USER" : "ADMIN";
             const row = document.createElement("tr");
             row.innerHTML = `
@@ -118,6 +123,9 @@
             return;
         }
 
+        // Client-side gate only, same as index.html's admin-link toggle — the server's
+        // class-level @PreAuthorize("hasRole('ADMIN')") on AdminUserController is what
+        // actually stops a non-admin from calling these endpoints directly.
         if (me.role !== "ADMIN") {
             window.location.href = "index.html";
             return;

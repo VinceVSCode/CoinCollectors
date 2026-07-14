@@ -10,6 +10,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Validates paging/filter/sort input for the catalog browse screen before it reaches the
+ * repository, so bad values (e.g. minYear > maxYear, page 0) fail fast with a clear message
+ * rather than producing a confusing empty result set or malformed SQL.
+ */
 public class CoinCatalogQueryService {
     private final CoinCatalogQueryRepositoryInterface coinCatalogQueryRepository;
 

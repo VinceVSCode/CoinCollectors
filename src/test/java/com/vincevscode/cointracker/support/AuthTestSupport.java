@@ -12,6 +12,13 @@ import java.time.LocalDateTime;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 
+/**
+ * Shared across the *ControllerTest classes that run against the real SecurityConfig filter
+ * chain (rather than {@code addFilters = false}): building a real Spring Security
+ * Authentication + AuthUserDetails principal here means @PreAuthorize expressions like
+ * {@code #userId == authentication.principal.userId or hasRole('ADMIN')} evaluate exactly as
+ * they would in production, letting these tests assert real 200/401/403 outcomes.
+ */
 public final class AuthTestSupport {
 
     private AuthTestSupport() {

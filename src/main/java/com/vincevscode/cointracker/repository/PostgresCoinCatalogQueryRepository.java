@@ -9,6 +9,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * JdbcTemplate-based implementation of the paged/filterable catalog browse query
+ * ({@code GET /api/coins}). {@code WHERE 1 = 1} is a standard trick that lets every optional
+ * filter below append an unconditional {@code AND ...} without special-casing "is this the
+ * first condition." See {@link PostgresCollectionEntryRepository} for the same pattern
+ * (and the note on why the dynamically-built ORDER BY clause is still injection-safe).
+ */
 public class PostgresCoinCatalogQueryRepository implements CoinCatalogQueryRepositoryInterface {
     private final JdbcTemplate jdbcTemplate;
 

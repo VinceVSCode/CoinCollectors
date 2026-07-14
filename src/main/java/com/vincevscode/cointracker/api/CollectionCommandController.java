@@ -12,6 +12,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * The single write endpoint for a user's collection: set how many of a given coin they own.
+ * PUT (not POST) because it's idempotent — calling it twice with the same quantity leaves the
+ * same end state, matching {@link com.vincevscode.cointracker.service.CollectionTrackingService#setCoinQuantity}'s
+ * upsert semantics.
+ */
 @RestController
 @RequestMapping("/api/users/{userId}/collection")
 public class CollectionCommandController {
@@ -21,6 +27,8 @@ public class CollectionCommandController {
         this.collectionTrackingService = collectionTrackingService;
     }
 
+    // #userId (the path variable) must match the caller's own id, unless they're an admin —
+    // this is what stops user A from editing user B's collection just by changing the URL.
     @PutMapping("/{coinId}")
     @PreAuthorize("#userId == authentication.principal.userId or hasRole('ADMIN')")
     public CollectionEntryResponse setCoinQuantity(

@@ -1,8 +1,11 @@
 // v0.2.28 Supported cache modes with predefined TTL values.
 package com.vincevscode.cointracker.config;
 
+/**
+ * Named TTL presets (in milliseconds) for {@link CachedCoinRepository}, selected via
+ * {@code COIN_TRACKER_CACHE_MODE}. Defaults to MEDIUM when unset — see {@link #fromEnviromentValue}.
+ */
 public enum CacheMode {
-    // An enum class for the TTL enviroment settings
     SHORT(15_000),
     MEDIUM(60_000),
     LONG(600_000);
@@ -17,7 +20,8 @@ public enum CacheMode {
     }
 
     public static CacheMode fromEnviromentValue(String value){
-        // first lets input a default selection
+        // No env var set: default to MEDIUM rather than throwing, so caching "just works"
+        // without requiring every deployment to opt in explicitly.
         if (value == null || value.isBlank()){
             return MEDIUM;
         }

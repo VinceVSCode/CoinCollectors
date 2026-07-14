@@ -12,7 +12,15 @@ import org.springframework.jdbc.support.KeyHolder;
 import java.sql.PreparedStatement;
 import java.util.List;
 
+/**
+ * JdbcTemplate-based implementation of {@link AuthUserRepositoryInterface} against the same
+ * `users` table {@link PostgresUserRepository} reads, but including the credential/role/status
+ * columns. {@code findAuthUserByUsername} backs every login attempt via
+ * {@link com.vincevscode.cointracker.security.AuthUserDetailsService}.
+ */
 public class PostgresAuthUserRepository implements AuthUserRepositoryInterface {
+    // Shared row mapper so every SELECT here builds an AuthUser identically — avoids column
+    // name / conversion (e.g. role enum, timestamp->LocalDateTime) drifting between methods.
     private static final RowMapper<AuthUser> AUTH_USER_ROW_MAPPER = (resultSet, rowNumber) -> new AuthUser(
             resultSet.getInt("id"),
             resultSet.getString("username"),
@@ -61,6 +69,8 @@ public class PostgresAuthUserRepository implements AuthUserRepositoryInterface {
                 VALUES (?, ?, ?, ?)
                 """;
 
+        // id is DB-generated (see V4__users_id_generated.sql) — insert without it and read the
+        // generated key back so we can return a fully-populated AuthUser to the caller.
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
@@ -114,6 +124,8 @@ public class PostgresAuthUserRepository implements AuthUserRepositoryInterface {
         return rowsUpdated == 0 ? null : findAuthUserById(userId);
     }
 
+    // Backs UserManagementService's "don't demote/deactivate the last active admin" guard —
+    // must be 0 or 1 for that check to fire correctly (1 = safe to block the change).
     @Override
     public long countActiveAdmins() {
         Long count = jdbcTemplate.queryForObject(

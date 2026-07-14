@@ -5,6 +5,12 @@ import com.vincevscode.cointracker.model.User;
 
 import java.util.List;
 
+/**
+ * Minimal write/lookup contract for the non-auth {@link User} projection. Deliberately thin
+ * (no update/delete) since user creation now goes through auth registration
+ * ({@link AuthUserRepositoryInterface#createAuthUser}) — this interface mainly exists for
+ * legacy/tests that only care about id+username, not credentials.
+ */
 public interface UserRepositoryInterface {
     void addUser(User user);
 

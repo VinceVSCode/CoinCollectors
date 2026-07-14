@@ -5,6 +5,11 @@ import com.vincevscode.cointracker.model.AuthUser;
 import com.vincevscode.cointracker.repository.AuthUserRepositoryInterface;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Thin validation layer over {@link AuthUserRepositoryInterface} lookups. Primarily consumed
+ * by {@link com.vincevscode.cointracker.security.AuthUserDetailsService} on every login/session
+ * check, so keep this fast and side-effect-free (read-only transactions only).
+ */
 public class AuthUserQueryService {
     private final AuthUserRepositoryInterface authUserRepository;
 

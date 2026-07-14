@@ -11,6 +11,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Direct JDBC implementation of {@link CoinRepositoryInterface} against the `coins` table.
+ * Uses PreparedStatement placeholders throughout (never string-concatenates user input into
+ * SQL) to avoid SQL injection. Each method opens/closes its own Connection via try-with-resources
+ * rather than holding one open, since {@link DatabaseConnection} hands out short-lived
+ * connections rather than a pooled/shared one.
+ */
 public class PostgresCoinRepository implements CoinRepositoryInterface {
 
     @Override

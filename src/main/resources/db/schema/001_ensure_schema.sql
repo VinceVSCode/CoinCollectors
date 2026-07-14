@@ -1,3 +1,6 @@
+-- Legacy manual-execution script combining db/001-003 into one idempotent (IF NOT EXISTS)
+-- file — same "superseded by Flyway, not run by any code" status as those three. See
+-- db/README.md for the original recommended manual execution order (schema -> reset -> seed).
 CREATE TABLE IF NOT EXISTS coins (
      id INTEGER PRIMARY KEY,
      country TEXT NOT NULL,

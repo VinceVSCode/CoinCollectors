@@ -1,3 +1,6 @@
+-- Flyway migration, run automatically by DatabaseBootstrap.initialize() before the Spring
+-- context starts. Establishes the three core tables + FKs; V2-V4 layer auth and generated-id
+-- changes on top of this without altering these CREATE TABLE statements.
 CREATE TABLE IF NOT EXISTS coins (
     id INTEGER PRIMARY KEY,
     country TEXT NOT NULL,
@@ -10,6 +13,9 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL UNIQUE
 );
 
+-- The (user_id, coin_id) pair is the real identity of a collection entry; the surrogate `id`
+-- exists mainly so CollectionEntryRepositoryInterface can address rows by a single key.
+-- ON DELETE CASCADE means deleting a user or coin silently drops their collection entries too.
 CREATE TABLE IF NOT EXISTS collection_entries (
     id INTEGER PRIMARY KEY,
     user_id INTEGER NOT NULL,

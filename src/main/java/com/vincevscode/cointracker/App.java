@@ -10,6 +10,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class App {
     public static void main(String[] args) {
+        // Schema/seed setup runs BEFORE the Spring context starts, because repository beans
+        // (wired in ApplicationConfiguration) assume the tables already exist when the app
+        // context is built — there's no dependency-ordered bean for "run raw SQL first".
         DatabaseBootstrap.initialize();
         SpringApplication.run(App.class, args);
     }

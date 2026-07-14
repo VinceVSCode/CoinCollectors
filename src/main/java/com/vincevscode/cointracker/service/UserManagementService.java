@@ -9,6 +9,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Backs the ADMIN-only user management endpoints ({@code AdminUserController}): listing users,
+ * changing roles, activating/deactivating accounts. The load-bearing rule here is the
+ * last-active-admin guard in setUserRole/setUserActive — without it, an admin could lock
+ * every admin (including themselves) out of the admin panel with no way back in.
+ * Note: a role change here only takes effect on the affected user's NEXT login (Spring
+ * Security snapshots authorities into the session at login); deactivation, by contrast, is
+ * enforced immediately by {@link com.vincevscode.cointracker.security.AccountStatusFilter}.
+ */
 public class UserManagementService {
     private final AuthUserRepositoryInterface authUserRepository;
 
@@ -33,6 +42,8 @@ public class UserManagementService {
 
         AuthUser existing = requireUser(userId);
 
+        // Only blocks the change if THIS user is themselves one of the (<=1) remaining active
+        // admins being demoted away from ADMIN — demoting a non-admin or a role no-op is fine.
         boolean removesLastAdmin = existing.getRole() == UserRole.ADMIN
                 && existing.isActive()
                 && role != UserRole.ADMIN

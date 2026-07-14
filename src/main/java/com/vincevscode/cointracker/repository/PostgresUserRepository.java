@@ -11,6 +11,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Legacy raw-JDBC implementation of {@link UserRepositoryInterface}, predating the
+ * JdbcTemplate-based repositories added alongside auth (compare
+ * {@link PostgresUserQueryRepository}). Kept for the thin id+username read path; user
+ * creation in practice goes through {@link PostgresAuthUserRepository#createAuthUser}.
+ */
 public class PostgresUserRepository implements UserRepositoryInterface {
 
     @Override

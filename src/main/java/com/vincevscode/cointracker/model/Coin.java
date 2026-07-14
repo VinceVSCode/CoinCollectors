@@ -2,6 +2,11 @@ package com.vincevscode.cointracker.model;
 
 import java.util.Objects;
 
+/**
+ * A single catalog entry: one coin design/mint identified by country + denomination + year.
+ * This is the "thing that can be collected" — {@link CollectionEntry} links a {@link User}
+ * to a Coin with a quantity owned. Coin itself carries no ownership data.
+ */
 public class Coin {
     private int id;
     private String  country;
@@ -41,6 +46,8 @@ public class Coin {
                 '}';
     }
 
+    // equals/hashCode are value-based (all fields) rather than id-only, since Coin instances
+    // are sometimes compared before an id has been assigned (e.g. catalog import/dedup checks).
     @Override
     public boolean equals(Object otherObject) {
         if (this == otherObject) {

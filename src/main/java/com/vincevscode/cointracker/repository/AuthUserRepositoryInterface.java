@@ -7,6 +7,17 @@ import com.vincevscode.cointracker.model.UserRole;
 
 import java.util.List;
 
+/**
+ * Storage contract for the credential/role side of a user. {@code findAuthUserByUsername} is
+ * the hot path Spring Security calls on every login attempt (via
+ * {@link com.vincevscode.cointracker.security.AuthUserDetailsService}); {@code createAuthUser}
+ * expects an already-hashed password (hashing happens in
+ * {@link com.vincevscode.cointracker.service.UserRegistrationService}, never here).
+ * The admin-management methods (getAllAuthUsers/updateRole/updateActive/countActiveAdmins)
+ * were added for {@code AdminUserController} — {@code countActiveAdmins} exists specifically
+ * so {@link com.vincevscode.cointracker.service.UserManagementService} can refuse to demote
+ * or deactivate the last remaining admin.
+ */
 public interface AuthUserRepositoryInterface {
     AuthUser findAuthUserById(int userId);
 

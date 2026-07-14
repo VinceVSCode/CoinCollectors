@@ -3,6 +3,9 @@ package com.vincevscode.cointracker.api.dto;
 
 import com.vincevscode.cointracker.model.UserRole;
 
+// Returned by register/login/me — carries only id+username+role, never the password hash,
+// so it's safe to send straight from AuthController regardless of source (AuthUser or
+// AuthUserDetails both happen to expose the same three fields it needs).
 public class AuthResponse {
     private int userId;
     private String username;

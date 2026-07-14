@@ -5,6 +5,12 @@ import com.vincevscode.cointracker.model.UserRole;
 
 import java.util.Objects;
 
+/**
+ * Read model built directly from SQL rows by the repository layer's row mappers, then
+ * returned straight through the service/controller stack — deliberately separate from
+ * {@link com.vincevscode.cointracker.model.AuthUser} so the API contract (this class's shape)
+ * can't accidentally change just because the domain model grows a field like passwordHash.
+ */
 public class AdminUserView {
     private int userId;
     private String username;

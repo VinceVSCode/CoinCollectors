@@ -3,6 +3,9 @@ package com.vincevscode.cointracker.view;
 
 import java.util.Objects;
 
+// Row shape for GET /api/users/{userId}/missing-coins. No quantity field (unlike
+// OwnedCoinView) — a missing coin by definition has none. See PostgresCollectionEntryRepository
+// for how "missing" is computed (anti-join against the catalog, not a stored fact).
 public class MissingCoinView {
     private int coinId;
     private String country;
