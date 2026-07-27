@@ -17,6 +17,14 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * JdbcTemplate-based implementation of {@link CollectionEntryRepositoryInterface}. The
+ * owned/missing query builders below assemble SQL dynamically for optional filters, but
+ * every value is still bound as a `?` placeholder (never string-concatenated) — the only
+ * thing built from unparameterized strings is the ORDER BY clause, and that comes from a
+ * closed enum's {@code getSqlExpression()} (see {@link com.vincevscode.cointracker.query.OwnedCoinSortField}),
+ * not user-controlled text, so it can't be used for SQL injection.
+ */
 public class PostgresCollectionEntryRepository implements CollectionEntryRepositoryInterface {
     private final JdbcTemplate jdbcTemplate;
 
@@ -31,6 +39,8 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
             VALUES (?, ?, ?)
             """;
 
+        // Same generated-key pattern as PostgresAuthUserRepository#createAuthUser: id is
+        // DB-generated (V2__collection_entries_id_generated.sql), so read it back post-insert.
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
@@ -144,6 +154,9 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
 
     @Override
     public List<OwnedCoinView> getOwnedCoinsForUser(int userId, OwnedCoinQuery query) {
+        // "Owned" = has a collection_entries row for this user with quantity > 0. A row with
+        // quantity 0 (set explicitly via the quantity endpoint) counts as NOT owned, same as
+        // having no row at all — see the mirrored LEFT JOIN logic in getMissingCoinsForUser.
         StringBuilder sqlBuilder = new StringBuilder("""
                 SELECT c.id AS coin_id, c.country, c.denomination, c.year, ce.quantity
                 FROM collection_entries ce
@@ -226,6 +239,10 @@ public class PostgresCollectionEntryRepository implements CollectionEntryReposit
 
     @Override
     public List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinQuery query) {
+        // Anti-join: LEFT JOIN the user's entries onto the full catalog, then keep only rows
+        // where no matching entry exists (ce.id IS NULL) or it exists with quantity 0.
+        // This is why "missing" coins aren't a separate table — they're just catalog rows
+        // the ownership join failed to match.
         StringBuilder sqlBuilder = new StringBuilder("""
                 SELECT c.id AS coin_id, c.country, c.denomination, c.year
                 FROM coins c

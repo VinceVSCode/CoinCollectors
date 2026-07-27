@@ -6,6 +6,12 @@ import com.vincevscode.cointracker.service.CoinCatalogService;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * A stdin/stdout menu loop for exercising {@link CoinCatalogService} directly, predating the
+ * REST API. Not registered as a Spring bean and not invoked from {@link com.vincevscode.cointracker.App#main} —
+ * the running app is a pure REST service now. Kept as a standalone class rather than deleted;
+ * would need to be manually instantiated (e.g. from a throwaway main method) to actually run.
+ */
 public class CoinCatalogCli {
     private CoinCatalogService coinCatalogService;
     private Scanner scanner;

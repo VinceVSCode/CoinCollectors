@@ -11,6 +11,14 @@ import com.vincevscode.cointracker.view.OwnedCoinView;
 
 import java.util.List;
 
+/**
+ * Storage contract for per-user coin ownership (see {@link CollectionEntry}). The
+ * getOwned/getMissing methods are overloaded from "no filter" to "filter" to "full paged
+ * query" so callers only pay for the query-building complexity they actually need
+ * (see {@link com.vincevscode.cointracker.query.OwnedCoinQuery} / {@link com.vincevscode.cointracker.query.MissingCoinQuery}).
+ * "Missing" coins are computed as catalog coins the user has no entry for (or quantity 0),
+ * not stored directly — so it's effectively an anti-join against the catalog.
+ */
 public interface CollectionEntryRepositoryInterface {
     CollectionEntry addCollectionEntry(int userId, int coinId, int quantity);
 
@@ -34,6 +42,8 @@ public interface CollectionEntryRepositoryInterface {
 
     List<MissingCoinView> getMissingCoinsForUser(int userId, MissingCoinQuery query);
 
+    // Used by CollectionTrackingService.getCollectionProgress to compute percentage-complete
+    // without pulling full row lists into memory.
     long countOwnedCoinsForUser(int userId, OwnedCoinFilter filter);
 
     long countMissingCoinsForUser(int userId, MissingCoinFilter filter);

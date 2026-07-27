@@ -3,6 +3,12 @@ package com.vincevscode.cointracker.model;
 
 import java.util.Objects;
 
+/**
+ * The join between a {@link User} and a {@link Coin}: how many of that coin the user owns.
+ * Stores ids rather than object references (mirrors the DB foreign keys) — callers that need
+ * the full Coin/User look them up separately via the respective repositories/services.
+ * {@code quantity == 0} is treated as "not owned" by the missing-coins queries.
+ */
 public class CollectionEntry {
     private int id;
     private int userId;

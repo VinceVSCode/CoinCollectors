@@ -1,4 +1,6 @@
-/* v0.6.2: Shared styles for Coin Tracker pages. */
+/* v0.6.2: Shared styles for Coin Tracker pages. One stylesheet for all five pages
+   (login/register/index/admin) rather than per-page files, since there's no build step to
+   bundle/scope styles — sections below are grouped by which page(s) use them. */
 body {
     font-family: Arial, sans-serif;
     margin: 24px;
@@ -110,7 +112,9 @@ th {
     font-size: 14px;
 }
 
-/* Progress bar */
+/* Progress bar: width of .progress-fill is set inline by index.html's loadProgress() to
+   progress.percentageComplete + "%" — the transition here is purely so that changes after
+   saving a quantity animate instead of jumping. */
 .progress-track {
     background: #e6e6e6;
     border-radius: 6px;

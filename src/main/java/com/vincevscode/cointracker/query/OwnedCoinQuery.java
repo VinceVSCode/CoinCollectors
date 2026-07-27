@@ -1,6 +1,7 @@
 // v0.3.0: Query object for owned coin screen requests.
 package com.vincevscode.cointracker.query;
 
+// Owned-coins equivalent of CoinCatalogQuery — see that class's doc for the general shape.
 public class OwnedCoinQuery {
     private OwnedCoinFilter filter;
     private OwnedCoinSortField sortField;

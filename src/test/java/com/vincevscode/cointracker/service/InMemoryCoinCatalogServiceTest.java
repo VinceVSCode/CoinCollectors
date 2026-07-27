@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// Overlaps significantly with InMemoryCoinRepositoryTest (same two scenarios, same
+// service+repository pairing) — kept as its own file rather than merged since it predates
+// that later, more thorough test class.
 public class InMemoryCoinCatalogServiceTest {
 
     @Test

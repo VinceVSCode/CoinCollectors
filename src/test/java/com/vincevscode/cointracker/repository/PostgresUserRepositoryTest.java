@@ -14,6 +14,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+// Integration test against a real Postgres — see PostgresAuthUserRepositoryTest's class doc
+// for the env/connectivity gotcha on this dev machine.
 class PostgresUserRepositoryTest {
     private PostgresUserRepository repository;
 

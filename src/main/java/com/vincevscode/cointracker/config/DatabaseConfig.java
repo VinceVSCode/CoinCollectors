@@ -1,6 +1,12 @@
 // v0.2.6: Database configuration loaded from environment variables.
 package com.vincevscode.cointracker.config;
 
+/**
+ * Reads and validates the three required {@code COIN_TRACKER_DB_*} env vars up front (see
+ * {@link com.vincevscode.cointracker.config.ApplicationConfiguration#dataSource()}), so a
+ * misconfigured deployment fails fast at startup with a clear message rather than failing
+ * confusingly on the first query.
+ */
 public class DatabaseConfig {
     private final String url;
     private final String username;

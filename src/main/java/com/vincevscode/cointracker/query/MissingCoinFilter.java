@@ -1,6 +1,8 @@
 // v0.3.0: Filter object for missing coin screen queries.
 package com.vincevscode.cointracker.query;
 
+// Missing-coins equivalent of CoinCatalogFilter (same fields — "missing" has no quantity to
+// filter on, unlike OwnedCoinFilter). See CoinCatalogFilter's doc for the shared conventions.
 public class MissingCoinFilter {
     private String country;
     private String denomination;

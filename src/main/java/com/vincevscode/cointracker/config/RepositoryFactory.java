@@ -6,6 +6,13 @@ import com.vincevscode.cointracker.repository.CoinRepositoryInterface;
 import com.vincevscode.cointracker.repository.InMemoryCoinRepository;
 import com.vincevscode.cointracker.repository.PostgresCoinRepository;
 
+/**
+ * Env-var-driven picker for a {@link CoinRepositoryInterface} implementation, optionally
+ * cache-wrapped. Predates {@link com.vincevscode.cointracker.config.ApplicationConfiguration}'s
+ * Spring @Bean wiring and is not currently invoked from the running app (App.java boots
+ * straight into Spring Boot, which never calls this) — kept as-is rather than deleted since
+ * it's still exercised directly by this class's own tests.
+ */
 public class RepositoryFactory {
 
     private RepositoryFactory() {

@@ -57,7 +57,10 @@ class CachedCoinRepositoryTest {
         assertEquals(coin, firstLookup);
         assertEquals(coin, secondLookup);
     }
-//    //Debug later if you want.
+    // Disabled: with a single coin of id 1 added, InMemoryCoinRepository.updateCoin does
+    // coins.set(coin.getId(), ...) -> coins.set(1, ...) against a 1-element list, which throws
+    // IndexOutOfBoundsException — the list-index-vs-id bug documented on that method. This test
+    // would start passing once that bug is fixed, not by changing anything here.
 //    @Test
 //    void updateCoin_shouldUpdateWrappedRepositoryAndCache() {
 //        InMemoryCoinRepository baseRepository = new InMemoryCoinRepository();

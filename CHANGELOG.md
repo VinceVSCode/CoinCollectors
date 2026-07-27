@@ -3,6 +3,105 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.7.4] - YYYY-MM-DD - 2026-07-27
+
+### Added
+- N/A
+
+### Changed
+- N/A
+
+### Removed
+- N/A
+
+### Fixed
+- `seed_data.sql` is now idempotent (`ON CONFLICT DO NOTHING` on the users/coins/collection_entries inserts), so the app no longer crashes on startup when `COIN_TRACKER_DB_SEED_ON_START=true` re-runs the seed against an already-populated volume (e.g. `docker compose up`/`restart` without `down -v`). Previously the re-seed failed with `duplicate key value violates unique constraint "users_username_key"`.
+
+### Bugs
+- N/A
+
+## [0.7.3] - YYYY-MM-DD - 2026-07-08
+
+### Added
+- `AccountStatusFilter`: authenticated API requests are re-checked against the user's current active status, so an admin deactivation takes effect on the user's very next request instead of only at session expiry. The filter blocks only on a positive "inactive" finding (a missing lookup falls through), skips static pages and the login/register/logout endpoints, and returns a 401 `{"error":"Your account has been deactivated."}`.
+- `AccountStatusFilterTest` covering deactivated/active/unknown/unauthenticated principals and the skipped paths.
+
+### Changed
+- `SecurityConfig` registers the new filter after the CSRF cookie filter.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Bugs
+- N/A
+
+## [0.7.2] - YYYY-MM-DD - 2026-07-07
+
+### Added
+- Adversarial/penetration test suites: `CollectionTrackingServiceSecurityTest`, `UserRegistrationServiceSecurityTest`, and `AuthControllerSecurityTest` — covering the fixed foreign-key case, privilege-escalation/mass-assignment attempts, credential-error non-enumeration, and CSRF enforcement.
+
+### Changed
+- N/A
+
+### Removed
+- N/A
+
+### Fixed
+- `PUT /api/users/{userId}/collection/{coinId}` with a non-existent `coinId` returned a raw 500 (unhandled foreign-key `DataIntegrityViolationException` leaking the internal error and path); it now returns a clean 400 `{"error":"Coin was not found."}`.
+
+### Security notes (verified, no change needed)
+- Registration hardcodes `UserRole.USER`; injected `role`/`id`/`active` fields in the request body are unbound and ignored (no privilege escalation via mass assignment).
+- Login returns an identical generic message for wrong password and unknown username (no user enumeration).
+- All SQL uses parameterized `JdbcTemplate` queries; an injection payload in the username is treated as a literal.
+- Over-length passwords (>72 bytes, BCrypt's limit) are rejected with a 400 rather than silently truncated.
+
+### Bugs
+- N/A
+
+## [0.7.1] - YYYY-MM-DD - 2026-07-07
+
+### Added
+- Admin user management: `AdminUserController` (`hasRole('ADMIN')`) with `GET /api/admin/users`, `PATCH /api/admin/users/{userId}/role`, and `PATCH /api/admin/users/{userId}/active`, backed by a new `UserManagementService` and `AdminUserView`.
+- `AuthUserRepositoryInterface` write/query operations: `getAllAuthUsers`, `updateRole`, `updateActive`, and `countActiveAdmins`.
+- A last-active-admin safety guard: demoting or deactivating the only remaining active admin is rejected with a 400.
+- `admin.html` management page (list users, promote/demote, activate/deactivate) plus an "Admin" link shown to admins on the main page.
+- Tests for the service (incl. the guard), the controller (admin/non-admin/unauthenticated + CSRF), and the new repository methods.
+
+### Changed
+- `PostgresAuthUserRepository` now shares a single row mapper across its query methods.
+- `SecurityConfig` permits the new `/admin.html` page.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Bugs
+- N/A
+
+## [0.7.0] - YYYY-MM-DD - 2026-07-07
+
+### Added
+- `GET /api/users/{userId}/progress` (self-or-admin) returning a new `CollectionProgressView` (userId, totalCoinsInCatalog, ownedCoinCount, missingCoinCount, percentageComplete).
+- `CollectionTrackingService.getCollectionProgress(userId)`, reusing the existing owned/missing count methods and guarding against a divide-by-zero on an empty catalog (percentage rounded to one decimal).
+- Tests: `CollectionProgressViewTest`, a mock-based `CollectionTrackingServiceProgressTest` (empty catalog, full, partial rounding, invalid id), and progress owner/forbidden/unauthenticated cases in `CollectionQueryControllerTest`.
+
+### Changed
+- The frontend Progress bar now reads the authoritative `/progress` endpoint instead of computing the percentage client-side.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Bugs
+- N/A
+
 ## [0.6.2] - YYYY-MM-DD - 2026-07-07
 
 ### Added

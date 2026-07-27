@@ -9,6 +9,13 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 
 import java.io.IOException;
 
+/**
+ * Wired into {@code SecurityConfig} so an authenticated-but-unauthorized request (e.g. USER
+ * hitting an ADMIN-only endpoint) gets a JSON 403 instead of Spring Security's default HTML
+ * error page — the frontend and API clients only ever expect JSON. Pairs with
+ * {@link JsonAuthenticationEntryPoint} (401, not authenticated at all) and
+ * {@code RestExceptionHandler} (everything else) to keep every error response the same shape.
+ */
 public class JsonAccessDeniedHandler implements AccessDeniedHandler {
 
     @Override

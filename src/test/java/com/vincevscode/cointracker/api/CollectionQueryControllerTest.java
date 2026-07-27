@@ -8,6 +8,7 @@ import com.vincevscode.cointracker.query.MissingCoinQuery;
 import com.vincevscode.cointracker.query.OwnedCoinQuery;
 import com.vincevscode.cointracker.service.AuthUserQueryService;
 import com.vincevscode.cointracker.service.CollectionTrackingService;
+import com.vincevscode.cointracker.view.CollectionProgressView;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
 import org.junit.jupiter.api.Test;
@@ -175,6 +176,32 @@ class CollectionQueryControllerTest {
                 .andExpect(jsonPath("$.totalCount").value(7))
                 .andExpect(jsonPath("$.pageNumber").value(1))
                 .andExpect(jsonPath("$.pageSize").value(10));
+    }
+
+    @Test
+    void getCollectionProgress_shouldReturnProgressForOwner() throws Exception {
+        when(collectionTrackingService.getCollectionProgress(1))
+                .thenReturn(new CollectionProgressView(1, 6, 2, 4, 33.3));
+
+        mockMvc.perform(get("/api/users/1/progress").with(asUser(1, UserRole.USER)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(1))
+                .andExpect(jsonPath("$.totalCoinsInCatalog").value(6))
+                .andExpect(jsonPath("$.ownedCoinCount").value(2))
+                .andExpect(jsonPath("$.missingCoinCount").value(4))
+                .andExpect(jsonPath("$.percentageComplete").value(33.3));
+    }
+
+    @Test
+    void getCollectionProgress_shouldReturnForbiddenForAnotherUser() throws Exception {
+        mockMvc.perform(get("/api/users/1/progress").with(asUser(2, UserRole.USER)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getCollectionProgress_shouldReturnUnauthorizedWhenNotLoggedIn() throws Exception {
+        mockMvc.perform(get("/api/users/1/progress"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

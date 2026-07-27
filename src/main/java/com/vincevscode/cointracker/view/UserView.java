@@ -3,6 +3,8 @@ package com.vincevscode.cointracker.view;
 
 import java.util.Objects;
 
+// Minimal id+username projection used by the general (non-admin) user endpoints — see
+// AdminUserView for the richer projection ADMIN-only screens use instead.
 public class UserView {
     private int userId;
     private String username;

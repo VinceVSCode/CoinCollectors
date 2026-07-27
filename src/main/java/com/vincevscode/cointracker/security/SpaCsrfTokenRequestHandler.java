@@ -11,6 +11,14 @@ import org.springframework.util.StringUtils;
 
 import java.util.function.Supplier;
 
+/**
+ * Spring Security's default CSRF handler (XorCsrfTokenRequestAttributeHandler) XOR-encodes
+ * the token it hands to server-rendered form fields, which a plain-JS SPA reading the raw
+ * {@code XSRF-TOKEN} cookie value can't reproduce. This handler keeps the XOR delegate for
+ * writing the token (defense against BREACH-style attacks) but, when reading a token back from
+ * a request, prefers the raw value sent in the {@code X-XSRF-TOKEN} header — exactly what
+ * {@code js/auth.js}'s fetchJson sends — falling back to the XOR-aware path otherwise.
+ */
 public final class SpaCsrfTokenRequestHandler extends CsrfTokenRequestAttributeHandler {
     private final CsrfTokenRequestHandler delegate = new XorCsrfTokenRequestAttributeHandler();
 

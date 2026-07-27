@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Tracker - Admin</title>
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="section topbar">
+    <h1>Coin Tracker - Admin</h1>
+    <div class="row" style="margin-bottom: 0;">
+        <span class="identity" id="identity"></span>
+        <a href="index.html">My collection</a>
+        <button id="logoutButton">Log out</button>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Users</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Active</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="usersTableBody"></tbody>
+    </table>
+    <div id="status" class="status"></div>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+    const identity = document.getElementById("identity");
+    const usersTableBody = document.getElementById("usersTableBody");
+    const status = document.getElementById("status");
+
+    document.getElementById("logoutButton").addEventListener("click", () => CoinAuth.logout());
+
+    function setStatus(message, kind) {
+        status.textContent = message;
+        status.className = "status" + (kind ? " " + kind : "");
+    }
+
+    function handleError(error) {
+        if (error.status === 401) {
+            CoinAuth.redirectToLogin();
+            return;
+        }
+        setStatus(error.message, "error");
+    }
+
+    async function loadUsers() {
+        const users = await CoinAuth.fetchJson("/api/admin/users");
+        usersTableBody.innerHTML = "";
+
+        users.forEach(user => {
+            // Only USER<->ADMIN toggle offered (no role picker) since those are the only two
+            // UserRole values. No client-side check preventing an admin from demoting/
+            // deactivating themselves or the last remaining admin — that guard lives entirely
+            // server-side in UserManagementService, which rejects the request with a 400 if
+            // it would strand the app with zero active admins.
+            const nextRole = user.role === "ADMIN" ? "USER" : "ADMIN";
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${user.userId}</td>
+                <td>${user.username}</td>
+                <td>${user.role}</td>
+                <td>${user.active ? "yes" : "no"}</td>
+                <td>
+                    <button data-action="role" data-id="${user.userId}" data-value="${nextRole}">Make ${nextRole}</button>
+                    <button data-action="active" data-id="${user.userId}" data-value="${!user.active}">${user.active ? "Deactivate" : "Activate"}</button>
+                </td>
+            `;
+
+            row.querySelector('[data-action="role"]')
+                .addEventListener("click", () => updateRole(user.userId, nextRole));
+            row.querySelector('[data-action="active"]')
+                .addEventListener("click", () => updateActive(user.userId, !user.active));
+
+            usersTableBody.appendChild(row);
+        });
+    }
+
+    async function updateRole(userId, role) {
+        try {
+            await CoinAuth.fetchJson(`/api/admin/users/${userId}/role`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ role })
+            });
+            setStatus(`Updated role for user ${userId} to ${role}.`, "success");
+            await loadUsers();
+        } catch (error) {
+            handleError(error);
+        }
+    }
+
+    async function updateActive(userId, active) {
+        try {
+            await CoinAuth.fetchJson(`/api/admin/users/${userId}/active`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ active })
+            });
+            setStatus(`${active ? "Activated" : "Deactivated"} user ${userId}.`, "success");
+            await loadUsers();
+        } catch (error) {
+            handleError(error);
+        }
+    }
+
+    async function initializePage() {
+        let me;
+        try {
+            me = await CoinAuth.getMe();
+        } catch (error) {
+            CoinAuth.redirectToLogin();
+            return;
+        }
+
+        // Client-side gate only, same as index.html's admin-link toggle — the server's
+        // class-level @PreAuthorize("hasRole('ADMIN')") on AdminUserController is what
+        // actually stops a non-admin from calling these endpoints directly.
+        if (me.role !== "ADMIN") {
+            window.location.href = "index.html";
+            return;
+        }
+
+        identity.textContent = `Signed in as ${me.username} (${me.role})`;
+
+        try {
+            await loadUsers();
+        } catch (error) {
+            handleError(error);
+        }
+    }
+
+    initializePage();
+</script>
+</body>
+</html>

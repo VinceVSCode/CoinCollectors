@@ -11,6 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * General-purpose user lookup — distinct from {@link AdminUserController}, which is the
+ * ADMIN-only management surface (role/active changes). This controller only reads via
+ * {@link UserQueryService}, so it can afford a looser per-endpoint authorization split:
+ * listing everyone is ADMIN-only, but looking up a single user is self-or-admin.
+ */
 @RestController
 @RequestMapping("/api/users")
 public class UserController {

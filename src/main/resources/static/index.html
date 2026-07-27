@@ -11,6 +11,7 @@
     <h1>Coin Tracker</h1>
     <div class="row" style="margin-bottom: 0;">
         <span class="identity" id="identity"></span>
+        <a href="admin.html" id="adminLink" style="display: none;">Admin</a>
         <button id="logoutButton">Log out</button>
     </div>
 </div>
@@ -88,6 +89,9 @@
     // Owned quantities keyed by coinId, used to pre-fill the catalog inputs.
     let ownedQuantities = {};
 
+    // Central error handler for every fetch on this page: a 401 means AccountStatusFilter or
+    // session expiry just invalidated us mid-use, so bounce to login rather than showing a
+    // confusing in-page error; anything else is shown inline near the action that failed.
     function handleError(error, statusElement) {
         if (error.status === 401) {
             CoinAuth.redirectToLogin();
@@ -99,6 +103,11 @@
         }
     }
 
+    // NOTE: every row-builder in this file uses innerHTML with values interpolated straight
+    // from the API response (coin.country, coin.denomination, ...) with no HTML-escaping.
+    // Currently safe because that data only ever comes from the coin catalog (admin-managed,
+    // not free-form user input), but if a future feature lets any user contribute catalog
+    // text, this would need escaping to avoid stored XSS.
     async function loadCatalog() {
         catalogStatus.textContent = "Loading catalog...";
         catalogStatus.className = "status";
@@ -173,22 +182,23 @@
         return missingCoins.length;
     }
 
-    function renderProgress(ownedCount, missingCount) {
-        const total = ownedCount + missingCount;
-        const percent = total > 0 ? Math.round((ownedCount / total) * 100) : 0;
+    async function loadProgress() {
+        const progress = await CoinAuth.fetchJson(`/api/users/${currentUserId}/progress`);
 
-        progressFill.style.width = percent + "%";
-        progressLabel.textContent = total > 0
-            ? `${ownedCount} of ${total} coins collected (${percent}%).`
+        progressFill.style.width = progress.percentageComplete + "%";
+        progressLabel.textContent = progress.totalCoinsInCatalog > 0
+            ? `${progress.ownedCoinCount} of ${progress.totalCoinsInCatalog} coins collected (${progress.percentageComplete}%).`
             : "No coins in the catalog yet.";
     }
 
+    // Fired in parallel since these three views (owned/missing/progress) are independent reads
+    // over the same collection data — no reason to serialize them.
     async function loadCollection() {
-        const [ownedCount, missingCount] = await Promise.all([
+        await Promise.all([
             loadOwnedCoins(),
-            loadMissingCoins()
+            loadMissingCoins(),
+            loadProgress()
         ]);
-        renderProgress(ownedCount, missingCount);
     }
 
     async function updateQuantity(coinId) {
@@ -208,6 +218,9 @@
             catalogStatus.textContent = `Saved quantity ${quantity} for coin ${coinId}.`;
             catalogStatus.className = "status success";
 
+            // Re-fetch owned/missing/progress rather than patching local state in place —
+            // simpler and guarantees the UI matches server truth (e.g. progress %), at the
+            // cost of a few extra requests per save. Fine at this app's scale.
             await loadCollection();
         } catch (error) {
             handleError(error, catalogStatus);
@@ -217,6 +230,8 @@
     logoutButton.addEventListener("click", () => CoinAuth.logout());
 
     async function initializePage() {
+        // getMe() failing (401) is the normal "not logged in" case for a fresh visit — not an
+        // error to surface, just a signal to redirect.
         let me;
         try {
             me = await CoinAuth.getMe();
@@ -227,6 +242,13 @@
 
         currentUserId = me.userId;
         identity.textContent = `Signed in as ${me.username} (${me.role})`;
+
+        // Client-side visibility toggle only — the actual protection is server-side
+        // (@PreAuthorize on AdminUserController); this just avoids showing a link a non-admin
+        // would immediately get a 403 from.
+        if (me.role === "ADMIN") {
+            document.getElementById("adminLink").style.display = "";
+        }
 
         try {
             await loadCollection();

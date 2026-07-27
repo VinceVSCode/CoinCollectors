@@ -22,6 +22,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * The four entry points a not-yet-authenticated client can reach (register/login) plus the
+ * two that need an existing session (logout/me). register+login are the only endpoints
+ * permitAll()'d in {@link com.vincevscode.cointracker.config.SecurityConfig} — everything else
+ * requires the session cookie this controller establishes.
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -60,10 +66,19 @@ public class AuthController {
             throw new IllegalArgumentException("Request body is required.");
         }
 
+        // authenticate() delegates to DaoAuthenticationProvider, which calls
+        // AuthUserDetailsService + the BCrypt PasswordEncoder and throws AuthenticationException
+        // (-> 401 via RestExceptionHandler) on a bad username/password without distinguishing
+        // which one was wrong, to avoid leaking whether a username exists.
         Authentication authenticationRequest =
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword());
         Authentication authentication = authenticationManager.authenticate(authenticationRequest);
 
+        // Manually building + saving the SecurityContext here (rather than relying on a
+        // filter) is what makes this stateless-looking REST call actually establish a session:
+        // saveContext persists it via HttpSessionSecurityContextRepository, and the response's
+        // Set-Cookie header for the session id is what the browser sends back on every
+        // subsequent request.
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
@@ -76,6 +91,9 @@ public class AuthController {
 
     @PostMapping("/logout")
     public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+        // Invalidates the HttpSession and clears the SecurityContext — same effect as Spring
+        // Security's default logout filter, just reachable via a JSON POST instead of a
+        // server-rendered logout form/redirect.
         new SecurityContextLogoutHandler().logout(request, response, authentication);
     }
 

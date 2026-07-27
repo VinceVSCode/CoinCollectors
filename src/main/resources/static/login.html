@@ -41,6 +41,8 @@
         status.className = "status";
 
         try {
+            // On success the server has already set the session cookie (see
+            // AuthController#login) — no token to store client-side, just navigate on.
             await CoinAuth.fetchJson("/api/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

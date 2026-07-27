@@ -3,6 +3,13 @@ package com.vincevscode.cointracker.model;
 
 import java.util.Objects;
 
+/**
+ * Lightweight, non-auth "collector" identity used by the catalog/collection read side
+ * (see {@link com.vincevscode.cointracker.service.UserQueryService}). Deliberately does NOT
+ * carry credentials or role — that lives on {@link AuthUser}, which is the Spring Security
+ * side of the same underlying `users` table. Keeping them separate avoids leaking
+ * passwordHash into collection-tracking code paths that never need it.
+ */
 public class User {
     private int id;
     private String username;

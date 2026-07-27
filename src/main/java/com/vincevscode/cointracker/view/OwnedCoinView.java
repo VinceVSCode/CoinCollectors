@@ -3,6 +3,9 @@ package com.vincevscode.cointracker.view;
 
 import java.util.Objects;
 
+// Row shape for GET /api/users/{userId}/owned-coins — coin fields joined with the caller's
+// quantity for that coin. Compare MissingCoinView, which is the same coin fields without
+// quantity (a missing coin has none to report).
 public class OwnedCoinView {
     private int coinId;
     private String country;

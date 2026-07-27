@@ -8,12 +8,20 @@ import com.vincevscode.cointracker.query.OwnedCoinFilter;
 import com.vincevscode.cointracker.query.OwnedCoinQuery;
 import com.vincevscode.cointracker.query.PageRequest;
 import com.vincevscode.cointracker.repository.CollectionEntryRepositoryInterface;
+import com.vincevscode.cointracker.view.CollectionProgressView;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Core business logic for per-user coin ownership: setting quantities, listing owned/missing
+ * coins, and computing collection progress. Callers (controllers) are expected to have already
+ * authorized that the caller may act on {@code userId} via {@code @PreAuthorize} — this class
+ * only validates data shape, not who's allowed to call it.
+ */
 public class CollectionTrackingService {
     private final CollectionEntryRepositoryInterface collectionEntryRepository;
 
@@ -34,6 +42,9 @@ public class CollectionTrackingService {
                 collectionEntryRepository.findCollectionEntryByUserIdAndCoinId(userId, coinId);
 
         if (existingEntry != null) {
+            // Setting quantity to 0 does NOT delete the row — it's kept and treated as "not
+            // owned" (see the owned/missing SQL in PostgresCollectionEntryRepository), which
+            // keeps this an idempotent upsert rather than needing separate add/remove paths.
             CollectionEntry updatedEntry = new CollectionEntry(
                     existingEntry.getId(),
                     userId,
@@ -45,7 +56,13 @@ public class CollectionTrackingService {
             return updatedEntry;
         }
 
-        return collectionEntryRepository.addCollectionEntry(userId, coinId, quantity);
+        try {
+            return collectionEntryRepository.addCollectionEntry(userId, coinId, quantity);
+        } catch (DataIntegrityViolationException exception) {
+            // The coin_id foreign key is the only user-supplied reference that can be invalid here
+            // (userId comes from the authenticated principal), so surface it as a clean domain error.
+            throw new IllegalArgumentException("Coin was not found.");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -196,6 +213,29 @@ public class CollectionTrackingService {
         validateMissingCoinFilter(filter);
 
         return collectionEntryRepository.countMissingCoinsForUser(userId, filter);
+    }
+
+    @Transactional(readOnly = true)
+    public CollectionProgressView getCollectionProgress(int userId) {
+        validateUserId(userId);
+
+        long ownedCoinCount = collectionEntryRepository.countOwnedCoinsForUser(userId, null);
+        long missingCoinCount = collectionEntryRepository.countMissingCoinsForUser(userId, null);
+        long totalCoinsInCatalog = ownedCoinCount + missingCoinCount;
+
+        // Guard divide-by-zero for an empty catalog; round to 1 decimal by scaling to
+        // tenths-of-a-percent before rounding, then scaling back down (e.g. 16.666...% -> 16.7%).
+        double percentageComplete = totalCoinsInCatalog == 0
+                ? 0.0
+                : Math.round((ownedCoinCount * 1000.0) / totalCoinsInCatalog) / 10.0;
+
+        return new CollectionProgressView(
+                userId,
+                totalCoinsInCatalog,
+                ownedCoinCount,
+                missingCoinCount,
+                percentageComplete
+        );
     }
 
 }

@@ -47,6 +47,10 @@
                 })
             });
 
+            // Registration does NOT log the user in (no session established by
+            // UserRegistrationService/AuthController#register) — send them to login.html to
+            // authenticate with the account they just created, after a brief pause so the
+            // success message is actually readable.
             status.textContent = "Account created. Redirecting to login...";
             status.className = "status success";
             setTimeout(() => { window.location.href = "login.html"; }, 900);

@@ -1,6 +1,9 @@
 // v0.4.0: Response DTO for collection entry write operations.
 package com.vincevscode.cointracker.api.dto;
 
+// Response shape for CollectionCommandController#setCoinQuantity — mirrors CollectionEntry's
+// fields but as an explicit API contract, decoupled from the domain model so the model can
+// change shape without silently changing the wire format.
 public class CollectionEntryResponse {
     private int entryId;
     private int userId;

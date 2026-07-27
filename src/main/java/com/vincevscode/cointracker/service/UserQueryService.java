@@ -7,6 +7,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Backs the general (non-admin) user lookup endpoints. Returns {@link UserView}, so it never
+ * risks exposing password hashes or roles the way returning {@link com.vincevscode.cointracker.model.AuthUser} would.
+ */
 public class UserQueryService {
     private final UserQueryRepositoryInterface userQueryRepository;
 

@@ -16,12 +16,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// Integration test against a real Postgres — see PostgresAuthUserRepositoryTest's class doc
+// for the env/connectivity gotcha on this dev machine.
 class PostgresCoinRepositoryTest {
     private PostgresCoinRepository repository;
 
     @BeforeEach
     void setUp() {
         repository = new PostgresCoinRepository();
+        // collection_entries first: it FKs to coins, so clearing coins first would fail (or
+        // cascade-delete unexpectedly) if any entries referenced them.
         clearCollectionEntriesTable();
         clearCoinsTable();
     }

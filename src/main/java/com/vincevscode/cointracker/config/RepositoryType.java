@@ -1,6 +1,11 @@
 // v0.2.7: Supported repository types for application startup configuration.
 package com.vincevscode.cointracker.config;
 
+/**
+ * Selects which {@link com.vincevscode.cointracker.repository.CoinRepositoryInterface}
+ * implementation {@link RepositoryFactory} builds, via {@code COIN_TRACKER_REPOSITORY}.
+ * Defaults to MEMORY when unset — see {@link #fromEnvironmentValue}.
+ */
 public enum RepositoryType {
     MEMORY,
     POSTGRES,

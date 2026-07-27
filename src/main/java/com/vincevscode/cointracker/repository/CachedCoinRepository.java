@@ -7,6 +7,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Decorator over another {@link CoinRepositoryInterface} that adds a TTL cache for
+ * find-by-id lookups only (getAllCoins always hits the delegate — caching a whole-table scan
+ * per-entry doesn't fit this cache's key shape). Wraps rather than subclasses the delegate so
+ * any backing implementation (Postgres, in-memory, ...) can be cached transparently; selectable
+ * via {@link com.vincevscode.cointracker.config.RepositoryFactory} + {@link com.vincevscode.cointracker.config.CacheMode},
+ * though see the interface doc for why that factory isn't currently on the live request path.
+ * Not thread-safe (plain HashMap) — a pre-existing gap that would matter if this were ever wired up.
+ */
 public class CachedCoinRepository implements CoinRepositoryInterface {
     private final CoinRepositoryInterface delegate;
     private final Map<Integer, CachedCoinEntry> coinByIdCache;
@@ -30,6 +39,7 @@ public class CachedCoinRepository implements CoinRepositoryInterface {
 
     @Override
     public List<Coin> getAllCoins() {
+        // Intentionally not cached — see class doc.
         return delegate.getAllCoins();
     }
 

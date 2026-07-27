@@ -7,6 +7,11 @@ import com.vincevscode.cointracker.repository.CoinRepositoryInterface;
 
 import java.util.List;
 
+/**
+ * Write-side (and simple read) operations for the coin catalog itself — not to be confused
+ * with {@link CollectionTrackingService}, which manages what a specific user owns. Validates
+ * coin fields before every write so invalid data never reaches the repository layer.
+ */
 public class CoinCatalogService {
 
     private CoinRepositoryInterface coinRepository;

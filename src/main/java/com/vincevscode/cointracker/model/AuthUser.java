@@ -4,6 +4,13 @@ package com.vincevscode.cointracker.model;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+/**
+ * The authentication/authorization view of a user row: credentials, role, and account status.
+ * Adapted to Spring Security via {@link com.vincevscode.cointracker.security.AuthUserDetails}
+ * (never exposed directly as a {@code UserDetails}, keeping Spring Security types out of the
+ * domain model). {@code active=false} is how {@link com.vincevscode.cointracker.security.AccountStatusFilter}
+ * enforces "deactivation takes effect on the very next request" rather than waiting for session expiry.
+ */
 public class AuthUser {
     private int id;
     private String username;

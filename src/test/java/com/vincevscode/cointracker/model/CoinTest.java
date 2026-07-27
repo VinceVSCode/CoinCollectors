@@ -7,6 +7,9 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+// Despite the name/package, this actually exercises InMemoryCoinRepository's CRUD behavior
+// (update-miss, remove, defensive-copy of getAllCoins), not the Coin model itself — Coin has
+// no behavior beyond equals/hashCode/toString, which aren't covered here.
 public class CoinTest {
 
     @Test
