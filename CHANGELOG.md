@@ -3,6 +3,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.7.4] - YYYY-MM-DD - 2026-07-27
+
+### Added
+- N/A
+
+### Changed
+- N/A
+
+### Removed
+- N/A
+
+### Fixed
+- `seed_data.sql` is now idempotent (`ON CONFLICT DO NOTHING` on the users/coins/collection_entries inserts), so the app no longer crashes on startup when `COIN_TRACKER_DB_SEED_ON_START=true` re-runs the seed against an already-populated volume (e.g. `docker compose up`/`restart` without `down -v`). Previously the re-seed failed with `duplicate key value violates unique constraint "users_username_key"`.
+
+### Bugs
+- N/A
+
 ## [0.7.3] - YYYY-MM-DD - 2026-07-08
 
 ### Added
