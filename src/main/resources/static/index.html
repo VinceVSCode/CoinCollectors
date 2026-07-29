@@ -7,8 +7,12 @@
     <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+<div class="page">
 <div class="section topbar">
-    <h1>Coin Tracker</h1>
+    <div class="brand">
+        <span class="coin-mark">CT</span>
+        <h1>Coin Tracker</h1>
+    </div>
     <div class="row" style="margin-bottom: 0;">
         <span class="identity" id="identity"></span>
         <a href="admin.html" id="adminLink" style="display: none;">Admin</a>
@@ -25,69 +29,55 @@
 </div>
 
 <div class="section">
-    <h2>Coin Catalog</h2>
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Country</th>
-            <th>Denomination</th>
-            <th>Year</th>
-            <th>Set Quantity</th>
-            <th>Action</th>
-        </tr>
-        </thead>
-        <tbody id="catalogTableBody"></tbody>
-    </table>
+    <h2>Coins</h2>
+    <div class="filter-bar">
+        <input type="search" id="searchInput" placeholder="Search by country or denomination...">
+        <div class="filter-tabs">
+            <button type="button" class="active" data-filter="all">All</button>
+            <button type="button" data-filter="owned">Owned</button>
+            <button type="button" data-filter="missing">Missing</button>
+        </div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+            <tr>
+                <th>Country</th>
+                <th>Denomination</th>
+                <th>Year</th>
+                <th>Status</th>
+                <th>Quantity</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody id="coinsTableBody"></tbody>
+        </table>
+    </div>
+    <div id="emptyState" class="empty-state" style="display: none;">No coins match your search.</div>
     <div id="catalogStatus" class="status"></div>
 </div>
-
-<div class="section">
-    <h2>Owned Coins</h2>
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Country</th>
-            <th>Denomination</th>
-            <th>Year</th>
-            <th>Quantity</th>
-        </tr>
-        </thead>
-        <tbody id="ownedTableBody"></tbody>
-    </table>
-</div>
-
-<div class="section">
-    <h2>Missing Coins</h2>
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Country</th>
-            <th>Denomination</th>
-            <th>Year</th>
-        </tr>
-        </thead>
-        <tbody id="missingTableBody"></tbody>
-    </table>
 </div>
 
 <script src="js/auth.js"></script>
 <script>
     const identity = document.getElementById("identity");
     const logoutButton = document.getElementById("logoutButton");
-    const catalogTableBody = document.getElementById("catalogTableBody");
-    const ownedTableBody = document.getElementById("ownedTableBody");
-    const missingTableBody = document.getElementById("missingTableBody");
+    const coinsTableBody = document.getElementById("coinsTableBody");
     const catalogStatus = document.getElementById("catalogStatus");
     const progressFill = document.getElementById("progressFill");
     const progressLabel = document.getElementById("progressLabel");
+    const searchInput = document.getElementById("searchInput");
+    const filterTabs = document.querySelectorAll(".filter-tabs button");
+    const emptyState = document.getElementById("emptyState");
 
     let currentUserId = null;
 
-    // Owned quantities keyed by coinId, used to pre-fill the catalog inputs.
+    // Owned quantities keyed by coinId, used to pre-fill quantity inputs and to derive each
+    // row's owned/missing status client-side (a quantity of 0 counts as "not owned" — see
+    // PostgresCollectionEntryRepository — so status is quantity > 0, not just "has a row").
     let ownedQuantities = {};
+    let catalogCoins = [];
+    let activeFilter = "all";
 
     // Central error handler for every fetch on this page: a 401 means AccountStatusFilter or
     // session expiry just invalidated us mid-use, so bounce to login rather than showing a
@@ -103,29 +93,47 @@
         }
     }
 
-    // NOTE: every row-builder in this file uses innerHTML with values interpolated straight
-    // from the API response (coin.country, coin.denomination, ...) with no HTML-escaping.
-    // Currently safe because that data only ever comes from the coin catalog (admin-managed,
-    // not free-form user input), but if a future feature lets any user contribute catalog
-    // text, this would need escaping to avoid stored XSS.
-    async function loadCatalog() {
-        catalogStatus.textContent = "Loading catalog...";
-        catalogStatus.className = "status";
+    function escapeHtml(value) {
+        const div = document.createElement("div");
+        div.textContent = String(value);
+        return div.innerHTML;
+    }
 
-        const coins = await CoinAuth.fetchJson("/api/coins");
-        catalogTableBody.innerHTML = "";
+    function matchesFilter(coin, quantity) {
+        if (activeFilter === "owned") return quantity > 0;
+        if (activeFilter === "missing") return quantity === 0;
+        return true;
+    }
 
-        coins.forEach(coin => {
+    function matchesSearch(coin, term) {
+        if (!term) return true;
+        const haystack = `${coin.country} ${coin.denomination}`.toLowerCase();
+        return haystack.includes(term);
+    }
+
+    // Single render pass over the full catalog: builds every row once, then applies
+    // filter/search as a show/hide pass so switching tabs or typing doesn't refetch anything.
+    function renderCoins() {
+        const term = searchInput.value.trim().toLowerCase();
+        coinsTableBody.innerHTML = "";
+        let visibleCount = 0;
+
+        catalogCoins.forEach(coin => {
+            const quantity = ownedQuantities[coin.coinId] || 0;
+            if (!matchesFilter(coin, quantity) || !matchesSearch(coin, term)) {
+                return;
+            }
+            visibleCount++;
+
             const row = document.createElement("tr");
-            const currentQuantity = ownedQuantities[coin.coinId] || 0;
-
+            const isOwned = quantity > 0;
             row.innerHTML = `
-                <td>${coin.coinId}</td>
-                <td>${coin.country}</td>
-                <td>${coin.denomination}</td>
+                <td>${escapeHtml(coin.country)}</td>
+                <td>${escapeHtml(coin.denomination)}</td>
                 <td>${coin.year}</td>
+                <td><span class="badge ${isOwned ? "badge-owned" : "badge-missing"}">${isOwned ? "Owned" : "Missing"}</span></td>
                 <td>
-                    <input type="number" min="0" value="${currentQuantity}" class="small-input" id="quantity-${coin.coinId}">
+                    <input type="number" min="0" value="${quantity}" class="small-input" id="quantity-${coin.coinId}">
                 </td>
                 <td>
                     <button data-coin-id="${coin.coinId}">Save</button>
@@ -133,53 +141,22 @@
             `;
 
             row.querySelector("button").addEventListener("click", () => updateQuantity(coin.coinId));
-            catalogTableBody.appendChild(row);
+            coinsTableBody.appendChild(row);
         });
 
-        catalogStatus.textContent = "Catalog loaded.";
-        catalogStatus.className = "status success";
+        emptyState.style.display = visibleCount === 0 ? "" : "none";
     }
 
-    async function loadOwnedCoins() {
+    async function loadCatalog() {
+        catalogCoins = await CoinAuth.fetchJson("/api/coins");
+    }
+
+    async function loadOwnedQuantities() {
         const ownedCoins = await CoinAuth.fetchJson(`/api/users/${currentUserId}/owned-coins`);
-
         ownedQuantities = {};
-        ownedTableBody.innerHTML = "";
-
         ownedCoins.forEach(coin => {
             ownedQuantities[coin.coinId] = coin.quantity;
-
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${coin.coinId}</td>
-                <td>${coin.country}</td>
-                <td>${coin.denomination}</td>
-                <td>${coin.year}</td>
-                <td>${coin.quantity}</td>
-            `;
-            ownedTableBody.appendChild(row);
         });
-
-        return ownedCoins.length;
-    }
-
-    async function loadMissingCoins() {
-        const missingCoins = await CoinAuth.fetchJson(`/api/users/${currentUserId}/missing-coins`);
-
-        missingTableBody.innerHTML = "";
-
-        missingCoins.forEach(coin => {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${coin.coinId}</td>
-                <td>${coin.country}</td>
-                <td>${coin.denomination}</td>
-                <td>${coin.year}</td>
-            `;
-            missingTableBody.appendChild(row);
-        });
-
-        return missingCoins.length;
     }
 
     async function loadProgress() {
@@ -191,14 +168,15 @@
             : "No coins in the catalog yet.";
     }
 
-    // Fired in parallel since these three views (owned/missing/progress) are independent reads
-    // over the same collection data — no reason to serialize them.
-    async function loadCollection() {
+    // Fired in parallel since catalog/owned-quantities/progress are independent reads over
+    // different (or overlapping-but-read-only) data — no reason to serialize them.
+    async function loadAll() {
         await Promise.all([
-            loadOwnedCoins(),
-            loadMissingCoins(),
+            loadCatalog(),
+            loadOwnedQuantities(),
             loadProgress()
         ]);
+        renderCoins();
     }
 
     async function updateQuantity(coinId) {
@@ -218,16 +196,28 @@
             catalogStatus.textContent = `Saved quantity ${quantity} for coin ${coinId}.`;
             catalogStatus.className = "status success";
 
-            // Re-fetch owned/missing/progress rather than patching local state in place —
+            // Re-fetch owned quantities/progress rather than patching local state in place —
             // simpler and guarantees the UI matches server truth (e.g. progress %), at the
-            // cost of a few extra requests per save. Fine at this app's scale.
-            await loadCollection();
+            // cost of a couple extra requests per save. Fine at this app's scale.
+            await Promise.all([loadOwnedQuantities(), loadProgress()]);
+            renderCoins();
         } catch (error) {
             handleError(error, catalogStatus);
         }
     }
 
     logoutButton.addEventListener("click", () => CoinAuth.logout());
+
+    searchInput.addEventListener("input", renderCoins);
+
+    filterTabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+            filterTabs.forEach(t => t.classList.remove("active"));
+            tab.classList.add("active");
+            activeFilter = tab.dataset.filter;
+            renderCoins();
+        });
+    });
 
     async function initializePage() {
         // getMe() failing (401) is the normal "not logged in" case for a fresh visit — not an
@@ -251,8 +241,7 @@
         }
 
         try {
-            await loadCollection();
-            await loadCatalog();
+            await loadAll();
         } catch (error) {
             handleError(error, catalogStatus);
         }
