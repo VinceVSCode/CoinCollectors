@@ -7,8 +7,12 @@
     <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+<div class="page">
 <div class="section topbar">
-    <h1>Coin Tracker - Admin</h1>
+    <div class="brand">
+        <span class="coin-mark">CT</span>
+        <h1>Coin Tracker &middot; Admin</h1>
+    </div>
     <div class="row" style="margin-bottom: 0;">
         <span class="identity" id="identity"></span>
         <a href="index.html">My collection</a>
@@ -18,19 +22,22 @@
 
 <div class="section">
     <h2>Users</h2>
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Username</th>
-            <th>Role</th>
-            <th>Active</th>
-            <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody id="usersTableBody"></tbody>
-    </table>
+    <div class="table-scroll">
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+        </table>
+    </div>
     <div id="status" class="status"></div>
+</div>
 </div>
 
 <script src="js/auth.js"></script>
@@ -54,6 +61,12 @@
         setStatus(error.message, "error");
     }
 
+    function escapeHtml(value) {
+        const div = document.createElement("div");
+        div.textContent = String(value);
+        return div.innerHTML;
+    }
+
     async function loadUsers() {
         const users = await CoinAuth.fetchJson("/api/admin/users");
         usersTableBody.innerHTML = "";
@@ -63,24 +76,35 @@
             // UserRole values. No client-side check preventing an admin from demoting/
             // deactivating themselves or the last remaining admin — that guard lives entirely
             // server-side in UserManagementService, which rejects the request with a 400 if
-            // it would strand the app with zero active admins.
+            // it would strand the app with zero active admins. The confirm() dialogs below are
+            // just a UX guardrail against misclicks, not a security control.
             const nextRole = user.role === "ADMIN" ? "USER" : "ADMIN";
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${user.userId}</td>
-                <td>${user.username}</td>
-                <td>${user.role}</td>
-                <td>${user.active ? "yes" : "no"}</td>
+                <td>${escapeHtml(user.username)}</td>
+                <td><span class="badge ${user.role === "ADMIN" ? "badge-admin" : "badge-user"}">${user.role}</span></td>
+                <td><span class="badge ${user.active ? "badge-owned" : "badge-inactive"}">${user.active ? "Active" : "Inactive"}</span></td>
                 <td>
                     <button data-action="role" data-id="${user.userId}" data-value="${nextRole}">Make ${nextRole}</button>
-                    <button data-action="active" data-id="${user.userId}" data-value="${!user.active}">${user.active ? "Deactivate" : "Activate"}</button>
+                    <button class="danger" data-action="active" data-id="${user.userId}" data-value="${!user.active}">${user.active ? "Deactivate" : "Activate"}</button>
                 </td>
             `;
 
             row.querySelector('[data-action="role"]')
-                .addEventListener("click", () => updateRole(user.userId, nextRole));
+                .addEventListener("click", () => {
+                    if (nextRole === "USER" && !confirm(`Demote "${user.username}" from ADMIN to USER?`)) {
+                        return;
+                    }
+                    updateRole(user.userId, nextRole);
+                });
             row.querySelector('[data-action="active"]')
-                .addEventListener("click", () => updateActive(user.userId, !user.active));
+                .addEventListener("click", () => {
+                    if (user.active && !confirm(`Deactivate "${user.username}"? They will be signed out on their next request.`)) {
+                        return;
+                    }
+                    updateActive(user.userId, !user.active);
+                });
 
             usersTableBody.appendChild(row);
         });

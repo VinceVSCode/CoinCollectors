@@ -7,9 +7,10 @@
     <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+<div class="auth-shell">
 <div class="section auth-card">
-    <h1>Coin Tracker</h1>
-    <h2>Log in</h2>
+    <h1><span class="coin-mark" style="display:inline-flex;vertical-align:middle;margin-right:8px;">CT</span>Coin Tracker</h1>
+    <p class="subtitle">Welcome back — log in to your collection.</p>
     <form id="loginForm">
         <div class="field">
             <label for="username">Username</label>
@@ -19,12 +20,13 @@
             <label for="password">Password</label>
             <input type="password" id="password" autocomplete="current-password" required>
         </div>
-        <button type="submit">Log in</button>
+        <button type="submit" class="primary">Log in</button>
     </form>
     <div id="status" class="status"></div>
     <div class="auth-links">
         No account? <a href="register.html">Register</a>
     </div>
+</div>
 </div>
 
 <script src="js/auth.js"></script>
