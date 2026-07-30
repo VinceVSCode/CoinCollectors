@@ -42,11 +42,11 @@
         <table>
             <thead>
             <tr>
-                <th>Country</th>
-                <th>Denomination</th>
-                <th>Year</th>
-                <th>Status</th>
-                <th>Quantity</th>
+                <th><button type="button" class="sort-header" data-sort="country">Country<span class="sort-arrow"></span></button></th>
+                <th><button type="button" class="sort-header" data-sort="denomination">Denomination<span class="sort-arrow"></span></button></th>
+                <th><button type="button" class="sort-header" data-sort="year">Year<span class="sort-arrow"></span></button></th>
+                <th><button type="button" class="sort-header" data-sort="status">Status<span class="sort-arrow"></span></button></th>
+                <th><button type="button" class="sort-header" data-sort="quantity">Quantity<span class="sort-arrow"></span></button></th>
                 <th></th>
             </tr>
             </thead>
@@ -68,6 +68,7 @@
     const progressLabel = document.getElementById("progressLabel");
     const searchInput = document.getElementById("searchInput");
     const filterTabs = document.querySelectorAll(".filter-tabs button");
+    const sortHeaders = document.querySelectorAll(".sort-header");
     const emptyState = document.getElementById("emptyState");
 
     let currentUserId = null;
@@ -78,6 +79,10 @@
     let ownedQuantities = {};
     let catalogCoins = [];
     let activeFilter = "all";
+
+    // null = no explicit sort, i.e. keep the catalog's own order as returned by /api/coins.
+    let sortKey = null;
+    let sortAscending = true;
 
     // Central error handler for every fetch on this page: a 401 means AccountStatusFilter or
     // session expiry just invalidated us mid-use, so bounce to login rather than showing a
@@ -111,14 +116,52 @@
         return haystack.includes(term);
     }
 
-    // Single render pass over the full catalog: builds every row once, then applies
-    // filter/search as a show/hide pass so switching tabs or typing doesn't refetch anything.
+    // The value a row is sorted by for a given column. Status and quantity both derive from
+    // ownedQuantities rather than the coin itself, so they can't be read straight off `coin`.
+    function sortValue(coin, key) {
+        const quantity = ownedQuantities[coin.coinId] || 0;
+        if (key === "quantity") return quantity;
+        if (key === "status") return quantity > 0 ? 1 : 0;
+        if (key === "year") return coin.year;
+        return String(coin[key] || "").toLowerCase();
+    }
+
+    function compareCoins(a, b) {
+        const left = sortValue(a, sortKey);
+        const right = sortValue(b, sortKey);
+        let result;
+        if (typeof left === "number" && typeof right === "number") {
+            result = left - right;
+        } else {
+            result = String(left).localeCompare(String(right));
+        }
+        // Fall back to coinId so equal values (e.g. two Missing rows) keep a stable, predictable
+        // order instead of depending on the engine's sort stability.
+        if (result === 0) {
+            result = a.coinId - b.coinId;
+        }
+        return sortAscending ? result : -result;
+    }
+
+    function updateSortIndicators() {
+        sortHeaders.forEach(header => {
+            const isActive = header.dataset.sort === sortKey;
+            header.classList.toggle("active", isActive);
+            header.querySelector(".sort-arrow").textContent = isActive ? (sortAscending ? "▲" : "▼") : "";
+        });
+    }
+
+    // Rebuilds the table body from scratch on every call: filter + search decide which coins
+    // appear, the active sort decides their order. Cheap at this app's scale (one page of
+    // catalog coins) and avoids keeping a second copy of row state in sync with the data.
     function renderCoins() {
         const term = searchInput.value.trim().toLowerCase();
         coinsTableBody.innerHTML = "";
         let visibleCount = 0;
 
-        catalogCoins.forEach(coin => {
+        const coins = sortKey ? [...catalogCoins].sort(compareCoins) : catalogCoins;
+
+        coins.forEach(coin => {
             const quantity = ownedQuantities[coin.coinId] || 0;
             if (!matchesFilter(coin, quantity) || !matchesSearch(coin, term)) {
                 return;
@@ -215,6 +258,21 @@
             filterTabs.forEach(t => t.classList.remove("active"));
             tab.classList.add("active");
             activeFilter = tab.dataset.filter;
+            renderCoins();
+        });
+    });
+
+    // Clicking the active column flips direction; clicking a new one sorts it ascending.
+    sortHeaders.forEach(header => {
+        header.addEventListener("click", () => {
+            const key = header.dataset.sort;
+            if (sortKey === key) {
+                sortAscending = !sortAscending;
+            } else {
+                sortKey = key;
+                sortAscending = true;
+            }
+            updateSortIndicators();
             renderCoins();
         });
     });

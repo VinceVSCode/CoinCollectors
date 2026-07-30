@@ -236,6 +236,37 @@ th {
     font-weight: 700;
 }
 
+/* Sortable table headers: a real <button> inside the <th> so sorting is keyboard-reachable
+   and announced as an action, styled to look like plain header text. */
+.sort-header {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.sort-header:hover {
+    background: none;
+    color: var(--color-text);
+}
+
+.sort-header.active {
+    color: var(--color-accent-dark);
+}
+
+.sort-arrow {
+    font-size: 0.625rem;
+    line-height: 1;
+}
+
 .small-input {
     width: 72px;
 }
