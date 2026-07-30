@@ -13,6 +13,9 @@ import com.vincevscode.cointracker.service.CollectionTrackingService;
 import com.vincevscode.cointracker.view.CollectionProgressView;
 import com.vincevscode.cointracker.view.MissingCoinView;
 import com.vincevscode.cointracker.view.OwnedCoinView;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -112,6 +115,29 @@ public class CollectionQueryController {
     @PreAuthorize("#userId == authentication.principal.userId or hasRole('ADMIN')")
     public CollectionProgressView getCollectionProgress(@PathVariable("userId") int userId) {
         return collectionTrackingService.getCollectionProgress(userId);
+    }
+
+    /**
+     * Exports the user's owned coins as a CSV download. Unlike the JSON read endpoints this one
+     * is deliberately unfiltered and unpaged — an export is a snapshot of the whole collection,
+     * and a partial file would be a surprising thing to hand someone as a backup.
+     */
+    @GetMapping(value = "/collection/export", produces = "text/csv")
+    @PreAuthorize("#userId == authentication.principal.userId or hasRole('ADMIN')")
+    public ResponseEntity<String> exportCollectionAsCsv(@PathVariable("userId") int userId) {
+        String csv = CollectionCsvFormatter.toCsv(
+                collectionTrackingService.getOwnedCoinsForUser(userId)
+        );
+
+        return ResponseEntity.ok()
+                // Charset is explicit so non-ASCII country names survive the round-trip into a
+                // spreadsheet, which would otherwise guess an encoding.
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"collection-" + userId + ".csv\""
+                )
+                .body(csv);
     }
 
     private OwnedCoinFilter buildOwnedCoinFilter(

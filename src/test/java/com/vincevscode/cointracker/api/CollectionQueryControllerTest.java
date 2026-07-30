@@ -205,6 +205,45 @@ class CollectionQueryControllerTest {
     }
 
     @Test
+    void exportCollectionAsCsv_shouldReturnCsvAttachmentForOwner() throws Exception {
+        when(collectionTrackingService.getOwnedCoinsForUser(1))
+                .thenReturn(List.of(
+                        new OwnedCoinView(1, "Bulgaria", "1 Lev", 2002, 2),
+                        new OwnedCoinView(2, "Germany", "1 Euro", 2010, 1)
+                ));
+
+        mockMvc.perform(get("/api/users/1/collection/export").with(asUser(1, UserRole.USER)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("text/csv"))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=\"collection-1.csv\""))
+                .andExpect(content().string(
+                        "Coin ID,Country,Denomination,Year,Quantity\r\n"
+                                + "1,Bulgaria,1 Lev,2002,2\r\n"
+                                + "2,Germany,1 Euro,2010,1\r\n"
+                ));
+    }
+
+    @Test
+    void exportCollectionAsCsv_shouldAllowAdminToExportAnotherUsersCollection() throws Exception {
+        when(collectionTrackingService.getOwnedCoinsForUser(1)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/users/1/collection/export").with(asUser(2, UserRole.ADMIN)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void exportCollectionAsCsv_shouldReturnForbiddenForAnotherUser() throws Exception {
+        mockMvc.perform(get("/api/users/1/collection/export").with(asUser(2, UserRole.USER)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void exportCollectionAsCsv_shouldReturnUnauthorizedWhenNotLoggedIn() throws Exception {
+        mockMvc.perform(get("/api/users/1/collection/export"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void getMissingCoinsForUser_shouldReturnPagedResponseWhenPaginationIsRequested() throws Exception {
         when(collectionTrackingService.getMissingCoinsForUser(eq(1), ArgumentMatchers.<MissingCoinQuery>any()))
                 .thenReturn(List.of(

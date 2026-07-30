@@ -37,6 +37,7 @@
             <button type="button" data-filter="owned">Owned</button>
             <button type="button" data-filter="missing">Missing</button>
         </div>
+        <button type="button" id="exportButton">Export CSV</button>
     </div>
     <div class="table-scroll">
         <table>
@@ -68,6 +69,7 @@
     const searchInput = document.getElementById("searchInput");
     const filterTabs = document.querySelectorAll(".filter-tabs button");
     const sortHeaders = document.querySelectorAll(".sort-header");
+    const exportButton = document.getElementById("exportButton");
     const emptyState = document.getElementById("emptyState");
 
     let currentUserId = null;
@@ -242,6 +244,44 @@
     }
 
     logoutButton.addEventListener("click", () => CoinAuth.logout());
+
+    // Downloaded via fetch rather than a plain <a href> so a 401 still routes through
+    // handleError() and bounces to login — a raw link would just render the JSON error body.
+    async function exportCsv() {
+        exportButton.disabled = true;
+
+        try {
+            const response = await fetch(`/api/users/${currentUserId}/collection/export`, {
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                const error = new Error("Could not export the collection.");
+                error.status = response.status;
+                throw error;
+            }
+
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `collection-${currentUserId}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            // Release the blob once the download has been handed off, or the object URL leaks
+            // for the lifetime of the page.
+            URL.revokeObjectURL(url);
+
+            CoinUI.success("Collection exported.");
+        } catch (error) {
+            handleError(error);
+        } finally {
+            exportButton.disabled = false;
+        }
+    }
+
+    exportButton.addEventListener("click", exportCsv);
 
     searchInput.addEventListener("input", renderCoins);
 
