@@ -36,29 +36,23 @@
             <tbody id="usersTableBody"></tbody>
         </table>
     </div>
-    <div id="status" class="status"></div>
 </div>
 </div>
 
 <script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
 <script>
     const identity = document.getElementById("identity");
     const usersTableBody = document.getElementById("usersTableBody");
-    const status = document.getElementById("status");
 
     document.getElementById("logoutButton").addEventListener("click", () => CoinAuth.logout());
-
-    function setStatus(message, kind) {
-        status.textContent = message;
-        status.className = "status" + (kind ? " " + kind : "");
-    }
 
     function handleError(error) {
         if (error.status === 401) {
             CoinAuth.redirectToLogin();
             return;
         }
-        setStatus(error.message, "error");
+        CoinUI.error(error.message);
     }
 
     function escapeHtml(value) {
@@ -117,7 +111,7 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ role })
             });
-            setStatus(`Updated role for user ${userId} to ${role}.`, "success");
+            CoinUI.success(`Updated role for user ${userId} to ${role}.`);
             await loadUsers();
         } catch (error) {
             handleError(error);
@@ -131,7 +125,7 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ active })
             });
-            setStatus(`${active ? "Activated" : "Deactivated"} user ${userId}.`, "success");
+            CoinUI.success(`${active ? "Activated" : "Deactivated"} user ${userId}.`);
             await loadUsers();
         } catch (error) {
             handleError(error);

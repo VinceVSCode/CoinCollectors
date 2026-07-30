@@ -54,16 +54,15 @@
         </table>
     </div>
     <div id="emptyState" class="empty-state" style="display: none;">No coins match your search.</div>
-    <div id="catalogStatus" class="status"></div>
 </div>
 </div>
 
 <script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
 <script>
     const identity = document.getElementById("identity");
     const logoutButton = document.getElementById("logoutButton");
     const coinsTableBody = document.getElementById("coinsTableBody");
-    const catalogStatus = document.getElementById("catalogStatus");
     const progressFill = document.getElementById("progressFill");
     const progressLabel = document.getElementById("progressLabel");
     const searchInput = document.getElementById("searchInput");
@@ -86,16 +85,13 @@
 
     // Central error handler for every fetch on this page: a 401 means AccountStatusFilter or
     // session expiry just invalidated us mid-use, so bounce to login rather than showing a
-    // confusing in-page error; anything else is shown inline near the action that failed.
-    function handleError(error, statusElement) {
+    // confusing in-page error; anything else surfaces as an error toast.
+    function handleError(error) {
         if (error.status === 401) {
             CoinAuth.redirectToLogin();
             return;
         }
-        if (statusElement) {
-            statusElement.textContent = error.message;
-            statusElement.className = "status error";
-        }
+        CoinUI.error(error.message);
     }
 
     function escapeHtml(value) {
@@ -226,9 +222,6 @@
         const input = document.getElementById(`quantity-${coinId}`);
         const quantity = Number(input.value);
 
-        catalogStatus.textContent = "Saving quantity...";
-        catalogStatus.className = "status";
-
         try {
             await CoinAuth.fetchJson(`/api/users/${currentUserId}/collection/${coinId}`, {
                 method: "PUT",
@@ -236,8 +229,7 @@
                 body: JSON.stringify({ quantity })
             });
 
-            catalogStatus.textContent = `Saved quantity ${quantity} for coin ${coinId}.`;
-            catalogStatus.className = "status success";
+            CoinUI.success(`Saved quantity ${quantity} for coin ${coinId}.`);
 
             // Re-fetch owned quantities/progress rather than patching local state in place —
             // simpler and guarantees the UI matches server truth (e.g. progress %), at the
@@ -245,7 +237,7 @@
             await Promise.all([loadOwnedQuantities(), loadProgress()]);
             renderCoins();
         } catch (error) {
-            handleError(error, catalogStatus);
+            handleError(error);
         }
     }
 
@@ -301,7 +293,7 @@
         try {
             await loadAll();
         } catch (error) {
-            handleError(error, catalogStatus);
+            handleError(error);
         }
     }
 
