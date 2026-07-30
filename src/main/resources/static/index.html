@@ -37,16 +37,17 @@
             <button type="button" data-filter="owned">Owned</button>
             <button type="button" data-filter="missing">Missing</button>
         </div>
+        <button type="button" id="exportButton">Export CSV</button>
     </div>
     <div class="table-scroll">
         <table>
             <thead>
             <tr>
-                <th>Country</th>
-                <th>Denomination</th>
-                <th>Year</th>
-                <th>Status</th>
-                <th>Quantity</th>
+                <th><button type="button" class="sort-header" data-sort="country">Country<span class="sort-arrow"></span></button></th>
+                <th><button type="button" class="sort-header" data-sort="denomination">Denomination<span class="sort-arrow"></span></button></th>
+                <th><button type="button" class="sort-header" data-sort="year">Year<span class="sort-arrow"></span></button></th>
+                <th><button type="button" class="sort-header" data-sort="status">Status<span class="sort-arrow"></span></button></th>
+                <th><button type="button" class="sort-header" data-sort="quantity">Quantity<span class="sort-arrow"></span></button></th>
                 <th></th>
             </tr>
             </thead>
@@ -54,20 +55,21 @@
         </table>
     </div>
     <div id="emptyState" class="empty-state" style="display: none;">No coins match your search.</div>
-    <div id="catalogStatus" class="status"></div>
 </div>
 </div>
 
 <script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
 <script>
     const identity = document.getElementById("identity");
     const logoutButton = document.getElementById("logoutButton");
     const coinsTableBody = document.getElementById("coinsTableBody");
-    const catalogStatus = document.getElementById("catalogStatus");
     const progressFill = document.getElementById("progressFill");
     const progressLabel = document.getElementById("progressLabel");
     const searchInput = document.getElementById("searchInput");
     const filterTabs = document.querySelectorAll(".filter-tabs button");
+    const sortHeaders = document.querySelectorAll(".sort-header");
+    const exportButton = document.getElementById("exportButton");
     const emptyState = document.getElementById("emptyState");
 
     let currentUserId = null;
@@ -79,18 +81,19 @@
     let catalogCoins = [];
     let activeFilter = "all";
 
+    // null = no explicit sort, i.e. keep the catalog's own order as returned by /api/coins.
+    let sortKey = null;
+    let sortAscending = true;
+
     // Central error handler for every fetch on this page: a 401 means AccountStatusFilter or
     // session expiry just invalidated us mid-use, so bounce to login rather than showing a
-    // confusing in-page error; anything else is shown inline near the action that failed.
-    function handleError(error, statusElement) {
+    // confusing in-page error; anything else surfaces as an error toast.
+    function handleError(error) {
         if (error.status === 401) {
             CoinAuth.redirectToLogin();
             return;
         }
-        if (statusElement) {
-            statusElement.textContent = error.message;
-            statusElement.className = "status error";
-        }
+        CoinUI.error(error.message);
     }
 
     function escapeHtml(value) {
@@ -111,14 +114,52 @@
         return haystack.includes(term);
     }
 
-    // Single render pass over the full catalog: builds every row once, then applies
-    // filter/search as a show/hide pass so switching tabs or typing doesn't refetch anything.
+    // The value a row is sorted by for a given column. Status and quantity both derive from
+    // ownedQuantities rather than the coin itself, so they can't be read straight off `coin`.
+    function sortValue(coin, key) {
+        const quantity = ownedQuantities[coin.coinId] || 0;
+        if (key === "quantity") return quantity;
+        if (key === "status") return quantity > 0 ? 1 : 0;
+        if (key === "year") return coin.year;
+        return String(coin[key] || "").toLowerCase();
+    }
+
+    function compareCoins(a, b) {
+        const left = sortValue(a, sortKey);
+        const right = sortValue(b, sortKey);
+        let result;
+        if (typeof left === "number" && typeof right === "number") {
+            result = left - right;
+        } else {
+            result = String(left).localeCompare(String(right));
+        }
+        // Fall back to coinId so equal values (e.g. two Missing rows) keep a stable, predictable
+        // order instead of depending on the engine's sort stability.
+        if (result === 0) {
+            result = a.coinId - b.coinId;
+        }
+        return sortAscending ? result : -result;
+    }
+
+    function updateSortIndicators() {
+        sortHeaders.forEach(header => {
+            const isActive = header.dataset.sort === sortKey;
+            header.classList.toggle("active", isActive);
+            header.querySelector(".sort-arrow").textContent = isActive ? (sortAscending ? "▲" : "▼") : "";
+        });
+    }
+
+    // Rebuilds the table body from scratch on every call: filter + search decide which coins
+    // appear, the active sort decides their order. Cheap at this app's scale (one page of
+    // catalog coins) and avoids keeping a second copy of row state in sync with the data.
     function renderCoins() {
         const term = searchInput.value.trim().toLowerCase();
         coinsTableBody.innerHTML = "";
         let visibleCount = 0;
 
-        catalogCoins.forEach(coin => {
+        const coins = sortKey ? [...catalogCoins].sort(compareCoins) : catalogCoins;
+
+        coins.forEach(coin => {
             const quantity = ownedQuantities[coin.coinId] || 0;
             if (!matchesFilter(coin, quantity) || !matchesSearch(coin, term)) {
                 return;
@@ -183,9 +224,6 @@
         const input = document.getElementById(`quantity-${coinId}`);
         const quantity = Number(input.value);
 
-        catalogStatus.textContent = "Saving quantity...";
-        catalogStatus.className = "status";
-
         try {
             await CoinAuth.fetchJson(`/api/users/${currentUserId}/collection/${coinId}`, {
                 method: "PUT",
@@ -193,8 +231,7 @@
                 body: JSON.stringify({ quantity })
             });
 
-            catalogStatus.textContent = `Saved quantity ${quantity} for coin ${coinId}.`;
-            catalogStatus.className = "status success";
+            CoinUI.success(`Saved quantity ${quantity} for coin ${coinId}.`);
 
             // Re-fetch owned quantities/progress rather than patching local state in place —
             // simpler and guarantees the UI matches server truth (e.g. progress %), at the
@@ -202,11 +239,49 @@
             await Promise.all([loadOwnedQuantities(), loadProgress()]);
             renderCoins();
         } catch (error) {
-            handleError(error, catalogStatus);
+            handleError(error);
         }
     }
 
     logoutButton.addEventListener("click", () => CoinAuth.logout());
+
+    // Downloaded via fetch rather than a plain <a href> so a 401 still routes through
+    // handleError() and bounces to login — a raw link would just render the JSON error body.
+    async function exportCsv() {
+        exportButton.disabled = true;
+
+        try {
+            const response = await fetch(`/api/users/${currentUserId}/collection/export`, {
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                const error = new Error("Could not export the collection.");
+                error.status = response.status;
+                throw error;
+            }
+
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `collection-${currentUserId}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            // Release the blob once the download has been handed off, or the object URL leaks
+            // for the lifetime of the page.
+            URL.revokeObjectURL(url);
+
+            CoinUI.success("Collection exported.");
+        } catch (error) {
+            handleError(error);
+        } finally {
+            exportButton.disabled = false;
+        }
+    }
+
+    exportButton.addEventListener("click", exportCsv);
 
     searchInput.addEventListener("input", renderCoins);
 
@@ -215,6 +290,21 @@
             filterTabs.forEach(t => t.classList.remove("active"));
             tab.classList.add("active");
             activeFilter = tab.dataset.filter;
+            renderCoins();
+        });
+    });
+
+    // Clicking the active column flips direction; clicking a new one sorts it ascending.
+    sortHeaders.forEach(header => {
+        header.addEventListener("click", () => {
+            const key = header.dataset.sort;
+            if (sortKey === key) {
+                sortAscending = !sortAscending;
+            } else {
+                sortKey = key;
+                sortAscending = true;
+            }
+            updateSortIndicators();
             renderCoins();
         });
     });
@@ -243,7 +333,7 @@
         try {
             await loadAll();
         } catch (error) {
-            handleError(error, catalogStatus);
+            handleError(error);
         }
     }
 

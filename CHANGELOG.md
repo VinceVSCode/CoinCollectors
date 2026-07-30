@@ -3,6 +3,45 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.8.0] - YYYY-MM-DD - 2026-07-31
+
+Collection-screen usability pass. Covers the three UX patches delivered together; the first
+two are frontend-only and shipped without their own version bump.
+
+### Added
+- Sortable columns on the collection table: each header is a button that sorts ascending, then
+  toggles direction, with an arrow marking the active column. Sorting happens client-side over
+  the already-loaded catalog and composes with the existing search box and filter tabs.
+- `js/ui.js` exposing a `CoinUI` namespace (`toast`/`success`/`error`/`info`). Toasts stack in a
+  fixed bottom-right container, auto-dismiss (errors linger longer than successes), can be
+  closed manually, and carry `role=alert`/`aria-live=assertive` for errors versus
+  `role=status`/`polite` otherwise.
+- `GET /api/users/{userId}/collection/export` (self-or-admin, same rule as the other collection
+  endpoints) returning the user's owned coins as a `text/csv` attachment, plus an "Export CSV"
+  button on the collection page. Deliberately unfiltered and unpaged — an export is a snapshot
+  of the whole collection.
+- `CollectionCsvFormatter` with RFC 4180 escaping (quoting fields containing commas/quotes/
+  newlines, doubling embedded quotes) and CSV-injection neutralization: values starting with
+  `= + - @` are apostrophe-prefixed so a spreadsheet reads them as text rather than a formula.
+- `CollectionCsvFormatterTest` plus owner/admin/other-user/unauthenticated cases for the new
+  endpoint in `CollectionQueryControllerTest`.
+
+### Changed
+- `index.html` and `admin.html` replace their inline `.status` divs with toasts, so feedback is
+  visible regardless of scroll position (a save confirmation below a long coin table could
+  previously land off-screen). `login.html` and `register.html` intentionally keep inline
+  status: on a single-form page a corner toast is easy to miss, and credential errors belong
+  next to the form.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Bugs
+- N/A
+
 ## [0.7.4] - YYYY-MM-DD - 2026-07-27
 
 ### Added

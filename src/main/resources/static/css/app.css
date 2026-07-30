@@ -236,6 +236,37 @@ th {
     font-weight: 700;
 }
 
+/* Sortable table headers: a real <button> inside the <th> so sorting is keyboard-reachable
+   and announced as an action, styled to look like plain header text. */
+.sort-header {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.sort-header:hover {
+    background: none;
+    color: var(--color-text);
+}
+
+.sort-header.active {
+    color: var(--color-accent-dark);
+}
+
+.sort-arrow {
+    font-size: 0.625rem;
+    line-height: 1;
+}
+
 .small-input {
     width: 72px;
 }
@@ -266,6 +297,88 @@ th {
 .status.success {
     background: var(--color-success-bg);
     color: var(--color-success);
+}
+
+/* Toasts: fixed-position stack in the bottom-right, populated by js/ui.js. Replaces the
+   older inline .status divs so feedback is visible regardless of scroll position. */
+.toast-container {
+    position: fixed;
+    bottom: var(--space-5);
+    right: var(--space-5);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    align-items: flex-end;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    max-width: min(380px, calc(100vw - 2 * var(--space-5)));
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: var(--shadow-md);
+    font-size: 0.875rem;
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-leaving {
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.toast-success {
+    border-color: var(--color-success);
+    background: var(--color-success-bg);
+    color: var(--color-success);
+}
+
+.toast-error {
+    border-color: var(--color-error);
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.toast-message {
+    flex: 1;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    color: inherit;
+    font-size: 1.125rem;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.toast-close:hover {
+    background: none;
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast {
+        transition: none;
+        opacity: 1;
+        transform: none;
+    }
 }
 
 .badge {
