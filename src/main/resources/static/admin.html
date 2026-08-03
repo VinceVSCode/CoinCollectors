@@ -37,6 +37,32 @@
         </table>
     </div>
 </div>
+
+<div class="section">
+    <h2>Coin Catalog</h2>
+    <form id="coinForm" class="filter-bar">
+        <input type="hidden" id="coinId">
+        <input type="text" id="coinCountry" placeholder="Country" required>
+        <input type="text" id="coinDenomination" placeholder="Denomination" required>
+        <input type="number" id="coinYear" placeholder="Year" min="1" max="2999" required class="small-input">
+        <button type="submit" class="primary" id="coinSubmitButton">Add coin</button>
+        <button type="button" id="coinCancelButton" style="display: none;">Cancel</button>
+    </form>
+    <div class="table-scroll">
+        <table>
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Country</th>
+                <th>Denomination</th>
+                <th>Year</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody id="coinsTableBody"></tbody>
+        </table>
+    </div>
+</div>
 </div>
 
 <script src="js/auth.js"></script>
@@ -44,6 +70,14 @@
 <script>
     const identity = document.getElementById("identity");
     const usersTableBody = document.getElementById("usersTableBody");
+    const coinsTableBody = document.getElementById("coinsTableBody");
+    const coinForm = document.getElementById("coinForm");
+    const coinIdInput = document.getElementById("coinId");
+    const coinCountryInput = document.getElementById("coinCountry");
+    const coinDenominationInput = document.getElementById("coinDenomination");
+    const coinYearInput = document.getElementById("coinYear");
+    const coinSubmitButton = document.getElementById("coinSubmitButton");
+    const coinCancelButton = document.getElementById("coinCancelButton");
 
     document.getElementById("logoutButton").addEventListener("click", () => CoinAuth.logout());
 
@@ -132,6 +166,114 @@
         }
     }
 
+    // Catalog reads go through the shared GET /api/coins (any authenticated user); only the
+    // writes below are admin-gated, so there's no admin-specific list endpoint to call.
+    async function loadCoins() {
+        const coins = await CoinAuth.fetchJson("/api/coins");
+        coinsTableBody.innerHTML = "";
+
+        coins.forEach(coin => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${coin.coinId}</td>
+                <td>${escapeHtml(coin.country)}</td>
+                <td>${escapeHtml(coin.denomination)}</td>
+                <td>${coin.year}</td>
+                <td>
+                    <button data-action="edit">Edit</button>
+                    <button class="danger" data-action="delete">Delete</button>
+                </td>
+            `;
+
+            row.querySelector('[data-action="edit"]')
+                .addEventListener("click", () => startEditingCoin(coin));
+            row.querySelector('[data-action="delete"]')
+                .addEventListener("click", () => deleteCoin(coin));
+
+            coinsTableBody.appendChild(row);
+        });
+    }
+
+    function startEditingCoin(coin) {
+        coinIdInput.value = coin.coinId;
+        coinCountryInput.value = coin.country;
+        coinDenominationInput.value = coin.denomination;
+        coinYearInput.value = coin.year;
+        coinSubmitButton.textContent = "Save changes";
+        coinCancelButton.style.display = "";
+        coinCountryInput.focus();
+    }
+
+    function resetCoinForm() {
+        coinForm.reset();
+        coinIdInput.value = "";
+        coinSubmitButton.textContent = "Add coin";
+        coinCancelButton.style.display = "none";
+    }
+
+    async function submitCoinForm(event) {
+        event.preventDefault();
+
+        const editingId = coinIdInput.value;
+        const body = JSON.stringify({
+            country: coinCountryInput.value,
+            denomination: coinDenominationInput.value,
+            year: Number(coinYearInput.value)
+        });
+
+        try {
+            await CoinAuth.fetchJson(
+                editingId ? `/api/admin/coins/${editingId}` : "/api/admin/coins",
+                {
+                    method: editingId ? "PUT" : "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body
+                }
+            );
+
+            CoinUI.success(editingId ? `Updated coin ${editingId}.` : "Coin added.");
+            resetCoinForm();
+            await loadCoins();
+        } catch (error) {
+            handleError(error);
+        }
+    }
+
+    // Two-step delete: the first attempt goes without ?force, so the server answers with how
+    // many collection entries would cascade away. Only then do we ask the admin to confirm
+    // destroying other users' data — the count comes from the server rather than being guessed
+    // here, so the number in the prompt is the one that will actually be deleted.
+    async function deleteCoin(coin) {
+        const label = `${coin.country} ${coin.denomination} (${coin.year})`;
+
+        try {
+            await CoinAuth.fetchJson(`/api/admin/coins/${coin.coinId}`, { method: "DELETE" });
+            CoinUI.success(`Deleted ${label}.`);
+            await loadCoins();
+            return;
+        } catch (error) {
+            if (error.status !== 400) {
+                handleError(error);
+                return;
+            }
+
+            if (!confirm(`${error.message}\n\nDelete ${label}?`)) {
+                return;
+            }
+        }
+
+        try {
+            await CoinAuth.fetchJson(`/api/admin/coins/${coin.coinId}?force=true`, { method: "DELETE" });
+            CoinUI.success(`Deleted ${label}.`);
+            await loadCoins();
+        } catch (error) {
+            handleError(error);
+        }
+    }
+
+    coinForm.addEventListener("submit", submitCoinForm);
+    coinCancelButton.addEventListener("click", resetCoinForm);
+
     async function initializePage() {
         let me;
         try {
@@ -152,7 +294,7 @@
         identity.textContent = `Signed in as ${me.username} (${me.role})`;
 
         try {
-            await loadUsers();
+            await Promise.all([loadUsers(), loadCoins()]);
         } catch (error) {
             handleError(error);
         }

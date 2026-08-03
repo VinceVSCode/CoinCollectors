@@ -8,8 +8,11 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
+import com.vincevscode.cointracker.repository.CoinCatalogCommandRepositoryInterface;
 import com.vincevscode.cointracker.repository.CoinCatalogQueryRepositoryInterface;
+import com.vincevscode.cointracker.repository.PostgresCoinCatalogCommandRepository;
 import com.vincevscode.cointracker.repository.PostgresCoinCatalogQueryRepository;
+import com.vincevscode.cointracker.service.CoinCatalogManagementService;
 import com.vincevscode.cointracker.service.CoinCatalogQueryService;
 import com.vincevscode.cointracker.repository.PostgresUserQueryRepository;
 import com.vincevscode.cointracker.repository.UserQueryRepositoryInterface;
@@ -75,6 +78,18 @@ public class ApplicationConfiguration {
             CoinCatalogQueryRepositoryInterface coinCatalogQueryRepository
     ) {
         return new CoinCatalogQueryService(coinCatalogQueryRepository);
+    }
+
+    @Bean
+    public CoinCatalogCommandRepositoryInterface coinCatalogCommandRepository(JdbcTemplate jdbcTemplate) {
+        return new PostgresCoinCatalogCommandRepository(jdbcTemplate);
+    }
+
+    @Bean
+    public CoinCatalogManagementService coinCatalogManagementService(
+            CoinCatalogCommandRepositoryInterface coinCatalogCommandRepository
+    ) {
+        return new CoinCatalogManagementService(coinCatalogCommandRepository);
     }
 
     @Bean
