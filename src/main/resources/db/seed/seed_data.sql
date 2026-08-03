@@ -20,6 +20,12 @@ INSERT INTO coins (id, country, denomination, year) VALUES
     (6, 'Greece', '1 Euro', 2008)
 ON CONFLICT (id) DO NOTHING;
 
+-- The coin rows above supply ids explicitly, which does NOT advance coins_id_seq (the sequence
+-- default added in V5). Without this re-sync the sequence would still point at 1 and the first
+-- admin-created coin would collide with seeded coin 1 on coins_pkey. The users/collection_entries
+-- seeds don't need this because they let their sequences generate the ids.
+SELECT setval('coins_id_seq', COALESCE((SELECT MAX(id) FROM coins), 1));
+
 -- A quantity of 0 (e.g. vince/coin 3 and 4, maria/coin 1) is intentional: it exercises the
 -- "explicit zero counts as not-owned" behavior in the owned/missing coin queries (see
 -- PostgresCollectionEntryRepository) rather than every seeded coin being either owned or

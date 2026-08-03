@@ -3,6 +3,49 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.9.0] - YYYY-MM-DD - 2026-07-31
+
+Admin coin catalog management. Until now the catalog could only be changed by editing
+`seed_data.sql` and resetting the database.
+
+### Added
+- `AdminCoinController` (`hasRole('ADMIN')`): `POST /api/admin/coins`,
+  `PUT /api/admin/coins/{coinId}`, `DELETE /api/admin/coins/{coinId}`. Reads stay on the
+  existing `GET /api/coins`, so there is deliberately no admin-only list endpoint.
+- `CoinCatalogManagementService` with input validation (required non-blank country/denomination,
+  trimmed, max 100 characters; year required and between 1 and 2999) and the delete cascade
+  guard described below.
+- `CoinCatalogCommandRepositoryInterface` + `PostgresCoinCatalogCommandRepository` — the write
+  half of the live catalog path, mirroring the query/command split already used by the
+  collection controllers. Kept separate from the older unwired `CoinRepositoryInterface`.
+- `CoinRequest` DTO. It has no `id` field, so a client can't reassign a coin's id via the body —
+  the id comes from the path on update and the sequence on create.
+- `V5__coins_id_generated.sql`, retrofitting a sequence default onto `coins.id` (same pattern as
+  V2 for `collection_entries` and V4 for `users`). Required because `coins.id` was a plain
+  `INTEGER PRIMARY KEY` with no default — only `seed_data.sql` ever supplied ids.
+- A Coin Catalog section on `admin.html`: add/edit form and a table with per-row Edit and Delete.
+- `CoinCatalogManagementServiceTest` (12 cases) and `AdminCoinControllerTest` (12 cases).
+
+### Changed
+- N/A
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Security notes
+- `collection_entries.coin_id` is `ON DELETE CASCADE`, so deleting a coin that users own does
+  not fail — it silently destroys their collection entries and shifts their progress. Deleting
+  a referenced coin is therefore refused unless the caller passes `?force=true`, and the
+  refusal message reports exactly how many entries would be lost. The admin UI performs the
+  unqualified delete first and only asks for confirmation using the server-reported count, so
+  the number shown is the number that will actually be deleted.
+
+### Bugs
+- N/A
+
 ## [0.8.0] - YYYY-MM-DD - 2026-07-31
 
 Collection-screen usability pass. Covers the three UX patches delivered together; the first
