@@ -3,6 +3,51 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.10.0] - YYYY-MM-DD - 2026-08-03
+
+Audit trail for privileged actions. Role changes, activations/deactivations and every catalog
+mutation are now recorded with who did them, when, and what changed.
+
+### Added
+- `V6__admin_actions.sql` creating the append-only `admin_actions` table. Neither the actor nor
+  the target is a foreign key, and the actor's username is denormalized alongside their id: an
+  audit record has to outlive the account and the row that produced it, and the most interesting
+  thing to audit is a deletion — an FK would delete the evidence along with it.
+- `AdminAuditRepositoryInterface` + `PostgresAdminAuditRepository`. `created_at` comes from the
+  column's `DEFAULT NOW()` so timestamps use the database clock rather than a possibly-skewed
+  app container's. Reads return `action` as the raw stored string, so a record written by a
+  build that knew an action this one doesn't still lists instead of failing.
+- `AdminActionType` enum, `AdminActor` value type, `AdminActionView`, and `AdminActorFactory`
+  (the single place `Authentication` is unwrapped for auditing).
+- `AdminAuditService` (read side only) and `AdminAuditController` exposing
+  `GET /api/admin/audit?limit=` (ADMIN-only). Out-of-range limits are clamped, not rejected;
+  the default is 50 and the maximum 500.
+- An Audit Trail section on `admin.html`, refreshed after every mutation.
+- `AdminAuditServiceTest` (4), `AdminAuditControllerTest` (5), and new audit assertions across
+  `UserManagementServiceTest` and `CoinCatalogManagementServiceTest`.
+
+### Changed
+- `UserManagementService` and `CoinCatalogManagementService` now take an `AdminActor` as their
+  first parameter on every mutating method, and record the audit entry inside the existing
+  `@Transactional` method. Passing the actor explicitly (rather than having services read
+  `SecurityContextHolder`) keeps the service layer free of Spring Security and makes it
+  impossible to invoke an audited operation without saying who is responsible. Writing inside
+  the same transaction means a change and its audit record commit together or not at all — an
+  audit trail that can silently miss entries proves nothing.
+- Forced coin deletion now counts the affected collection entries before deleting. It previously
+  skipped the count as an optimization when `force=true`; the count is now always taken so the
+  record can state how many entries cascaded away, which is the most important consequence of
+  that action.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Bugs
+- N/A
+
 ## [0.9.0] - YYYY-MM-DD - 2026-07-31
 
 Admin coin catalog management. Until now the catalog could only be changed by editing

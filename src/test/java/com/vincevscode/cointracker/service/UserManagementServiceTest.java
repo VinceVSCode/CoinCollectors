@@ -1,8 +1,11 @@
 // v0.7.1: Unit tests for UserManagementService admin operations and the last-admin safety guard.
 package com.vincevscode.cointracker.service;
 
+import com.vincevscode.cointracker.model.AdminActionType;
+import com.vincevscode.cointracker.model.AdminActor;
 import com.vincevscode.cointracker.model.AuthUser;
 import com.vincevscode.cointracker.model.UserRole;
+import com.vincevscode.cointracker.repository.AdminAuditRepositoryInterface;
 import com.vincevscode.cointracker.repository.AuthUserRepositoryInterface;
 import com.vincevscode.cointracker.view.AdminUserView;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,16 +19,21 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class UserManagementServiceTest {
+    private static final AdminActor ACTOR = new AdminActor(1, "vince");
+
     private AuthUserRepositoryInterface repository;
+    private AdminAuditRepositoryInterface auditRepository;
     private UserManagementService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(AuthUserRepositoryInterface.class);
-        service = new UserManagementService(repository);
+        auditRepository = mock(AdminAuditRepositoryInterface.class);
+        service = new UserManagementService(repository, auditRepository);
     }
 
     private AuthUser user(int id, String username, UserRole role, boolean active) {
@@ -51,9 +59,11 @@ class UserManagementServiceTest {
         when(repository.findAuthUserById(2)).thenReturn(user(2, "alex", UserRole.USER, true));
         when(repository.updateRole(2, UserRole.ADMIN)).thenReturn(user(2, "alex", UserRole.ADMIN, true));
 
-        AdminUserView result = service.setUserRole(2, UserRole.ADMIN);
+        AdminUserView result = service.setUserRole(ACTOR, 2, UserRole.ADMIN);
 
         assertEquals(new AdminUserView(2, "alex", UserRole.ADMIN, true), result);
+        verify(auditRepository).recordAction(
+                ACTOR, AdminActionType.USER_ROLE_CHANGED, "USER", 2, "alex: USER -> ADMIN");
     }
 
     @Test
@@ -62,7 +72,7 @@ class UserManagementServiceTest {
         when(repository.countActiveAdmins()).thenReturn(2L);
         when(repository.updateRole(1, UserRole.USER)).thenReturn(user(1, "vince", UserRole.USER, true));
 
-        AdminUserView result = service.setUserRole(1, UserRole.USER);
+        AdminUserView result = service.setUserRole(ACTOR, 1, UserRole.USER);
 
         assertEquals(UserRole.USER, result.getRole());
     }
@@ -74,11 +84,13 @@ class UserManagementServiceTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.setUserRole(1, UserRole.USER)
+                () -> service.setUserRole(ACTOR, 1, UserRole.USER)
         );
 
         assertEquals("Cannot remove the last active administrator.", exception.getMessage());
         verify(repository, never()).updateRole(1, UserRole.USER);
+        // A refused change is not a change: nothing may be written to the trail for it.
+        verifyNoInteractions(auditRepository);
     }
 
     @Test
@@ -87,7 +99,7 @@ class UserManagementServiceTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.setUserRole(99, UserRole.USER)
+                () -> service.setUserRole(ACTOR, 99, UserRole.USER)
         );
 
         assertEquals("User was not found.", exception.getMessage());
@@ -98,9 +110,35 @@ class UserManagementServiceTest {
         when(repository.findAuthUserById(2)).thenReturn(user(2, "alex", UserRole.USER, true));
         when(repository.updateActive(2, false)).thenReturn(user(2, "alex", UserRole.USER, false));
 
-        AdminUserView result = service.setUserActive(2, false);
+        AdminUserView result = service.setUserActive(ACTOR, 2, false);
 
         assertEquals(new AdminUserView(2, "alex", UserRole.USER, false), result);
+        verify(auditRepository).recordAction(
+                ACTOR, AdminActionType.USER_DEACTIVATED, "USER", 2, "alex");
+    }
+
+    @Test
+    void setUserActive_shouldRecordActivationSeparatelyFromDeactivation() {
+        when(repository.findAuthUserById(2)).thenReturn(user(2, "alex", UserRole.USER, false));
+        when(repository.updateActive(2, true)).thenReturn(user(2, "alex", UserRole.USER, true));
+
+        service.setUserActive(ACTOR, 2, true);
+
+        verify(auditRepository).recordAction(
+                ACTOR, AdminActionType.USER_ACTIVATED, "USER", 2, "alex");
+    }
+
+    @Test
+    void setUserRole_shouldRejectMissingActor() {
+        assertEquals(
+                "Acting administrator is required.",
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> service.setUserRole(null, 2, UserRole.ADMIN)
+                ).getMessage()
+        );
+
+        verifyNoInteractions(auditRepository);
     }
 
     @Test
@@ -110,7 +148,7 @@ class UserManagementServiceTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.setUserActive(1, false)
+                () -> service.setUserActive(ACTOR, 1, false)
         );
 
         assertEquals("Cannot deactivate the last active administrator.", exception.getMessage());
@@ -121,7 +159,7 @@ class UserManagementServiceTest {
     void setUserActive_shouldRejectInvalidUserId() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> service.setUserActive(0, true)
+                () -> service.setUserActive(ACTOR, 0, true)
         );
     }
 }

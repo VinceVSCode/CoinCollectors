@@ -63,6 +63,26 @@
         </table>
     </div>
 </div>
+
+<div class="section">
+    <h2>Audit Trail</h2>
+    <p>Privileged changes, most recent first. This record is read-only.</p>
+    <div class="table-scroll">
+        <table>
+            <thead>
+            <tr>
+                <th>When</th>
+                <th>Admin</th>
+                <th>Action</th>
+                <th>Target</th>
+                <th>Details</th>
+            </tr>
+            </thead>
+            <tbody id="auditTableBody"></tbody>
+        </table>
+    </div>
+    <div id="auditEmptyState" class="empty-state" style="display: none;">No admin actions recorded yet.</div>
+</div>
 </div>
 
 <script src="js/auth.js"></script>
@@ -78,6 +98,8 @@
     const coinYearInput = document.getElementById("coinYear");
     const coinSubmitButton = document.getElementById("coinSubmitButton");
     const coinCancelButton = document.getElementById("coinCancelButton");
+    const auditTableBody = document.getElementById("auditTableBody");
+    const auditEmptyState = document.getElementById("auditEmptyState");
 
     document.getElementById("logoutButton").addEventListener("click", () => CoinAuth.logout());
 
@@ -146,7 +168,7 @@
                 body: JSON.stringify({ role })
             });
             CoinUI.success(`Updated role for user ${userId} to ${role}.`);
-            await loadUsers();
+            await Promise.all([loadUsers(), loadAuditTrail()]);
         } catch (error) {
             handleError(error);
         }
@@ -160,7 +182,7 @@
                 body: JSON.stringify({ active })
             });
             CoinUI.success(`${active ? "Activated" : "Deactivated"} user ${userId}.`);
-            await loadUsers();
+            await Promise.all([loadUsers(), loadAuditTrail()]);
         } catch (error) {
             handleError(error);
         }
@@ -233,7 +255,7 @@
 
             CoinUI.success(editingId ? `Updated coin ${editingId}.` : "Coin added.");
             resetCoinForm();
-            await loadCoins();
+            await Promise.all([loadCoins(), loadAuditTrail()]);
         } catch (error) {
             handleError(error);
         }
@@ -249,7 +271,7 @@
         try {
             await CoinAuth.fetchJson(`/api/admin/coins/${coin.coinId}`, { method: "DELETE" });
             CoinUI.success(`Deleted ${label}.`);
-            await loadCoins();
+            await Promise.all([loadCoins(), loadAuditTrail()]);
             return;
         } catch (error) {
             if (error.status !== 400) {
@@ -265,10 +287,47 @@
         try {
             await CoinAuth.fetchJson(`/api/admin/coins/${coin.coinId}?force=true`, { method: "DELETE" });
             CoinUI.success(`Deleted ${label}.`);
-            await loadCoins();
+            await Promise.all([loadCoins(), loadAuditTrail()]);
         } catch (error) {
             handleError(error);
         }
+    }
+
+    // Server sends a LocalDateTime as an ISO-8601 string with no zone. Rendering it via the
+    // browser's locale keeps it readable without pretending we know the server's timezone.
+    function formatTimestamp(value) {
+        if (!value) {
+            return "";
+        }
+
+        const parsed = new Date(value);
+        return isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
+    }
+
+    // Underscored enum names (USER_ROLE_CHANGED) are the storage format, not something to show
+    // an admin — this turns them into "User role changed".
+    function formatAction(action) {
+        const words = String(action).toLowerCase().replace(/_/g, " ");
+        return words.charAt(0).toUpperCase() + words.slice(1);
+    }
+
+    async function loadAuditTrail() {
+        const actions = await CoinAuth.fetchJson("/api/admin/audit");
+        auditTableBody.innerHTML = "";
+
+        actions.forEach(entry => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${escapeHtml(formatTimestamp(entry.createdAt))}</td>
+                <td>${escapeHtml(entry.actorUsername)}</td>
+                <td>${escapeHtml(formatAction(entry.action))}</td>
+                <td>${escapeHtml(entry.targetType)}${entry.targetId == null ? "" : " #" + entry.targetId}</td>
+                <td>${escapeHtml(entry.details || "")}</td>
+            `;
+            auditTableBody.appendChild(row);
+        });
+
+        auditEmptyState.style.display = actions.length === 0 ? "" : "none";
     }
 
     coinForm.addEventListener("submit", submitCoinForm);
@@ -294,7 +353,7 @@
         identity.textContent = `Signed in as ${me.username} (${me.role})`;
 
         try {
-            await Promise.all([loadUsers(), loadCoins()]);
+            await Promise.all([loadUsers(), loadCoins(), loadAuditTrail()]);
         } catch (error) {
             handleError(error);
         }
