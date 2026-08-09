@@ -7,6 +7,7 @@ import com.vincevscode.cointracker.view.CoinCatalogView;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,10 +37,14 @@ public class AdminCoinController {
     }
 
     @PostMapping
-    public ResponseEntity<CoinCatalogView> createCoin(@RequestBody CoinRequest request) {
+    public ResponseEntity<CoinCatalogView> createCoin(
+            @RequestBody CoinRequest request,
+            Authentication authentication
+    ) {
         requireBody(request);
 
         CoinCatalogView created = coinCatalogManagementService.createCoin(
+                AdminActorFactory.fromAuthentication(authentication),
                 request.getCountry(),
                 request.getDenomination(),
                 request.getYear()
@@ -51,11 +56,13 @@ public class AdminCoinController {
     @PutMapping("/{coinId}")
     public CoinCatalogView updateCoin(
             @PathVariable("coinId") int coinId,
-            @RequestBody CoinRequest request
+            @RequestBody CoinRequest request,
+            Authentication authentication
     ) {
         requireBody(request);
 
         return coinCatalogManagementService.updateCoin(
+                AdminActorFactory.fromAuthentication(authentication),
                 coinId,
                 request.getCountry(),
                 request.getDenomination(),
@@ -71,9 +78,14 @@ public class AdminCoinController {
     @DeleteMapping("/{coinId}")
     public ResponseEntity<Void> deleteCoin(
             @PathVariable("coinId") int coinId,
-            @RequestParam(name = "force", required = false, defaultValue = "false") boolean force
+            @RequestParam(name = "force", required = false, defaultValue = "false") boolean force,
+            Authentication authentication
     ) {
-        coinCatalogManagementService.deleteCoin(coinId, force);
+        coinCatalogManagementService.deleteCoin(
+                AdminActorFactory.fromAuthentication(authentication),
+                coinId,
+                force
+        );
         return ResponseEntity.noContent().build();
     }
 

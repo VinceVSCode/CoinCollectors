@@ -8,6 +8,9 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
+import com.vincevscode.cointracker.repository.AdminAuditRepositoryInterface;
+import com.vincevscode.cointracker.repository.PostgresAdminAuditRepository;
+import com.vincevscode.cointracker.service.AdminAuditService;
 import com.vincevscode.cointracker.repository.CoinCatalogCommandRepositoryInterface;
 import com.vincevscode.cointracker.repository.CoinCatalogQueryRepositoryInterface;
 import com.vincevscode.cointracker.repository.PostgresCoinCatalogCommandRepository;
@@ -87,9 +90,20 @@ public class ApplicationConfiguration {
 
     @Bean
     public CoinCatalogManagementService coinCatalogManagementService(
-            CoinCatalogCommandRepositoryInterface coinCatalogCommandRepository
+            CoinCatalogCommandRepositoryInterface coinCatalogCommandRepository,
+            AdminAuditRepositoryInterface adminAuditRepository
     ) {
-        return new CoinCatalogManagementService(coinCatalogCommandRepository);
+        return new CoinCatalogManagementService(coinCatalogCommandRepository, adminAuditRepository);
+    }
+
+    @Bean
+    public AdminAuditRepositoryInterface adminAuditRepository(JdbcTemplate jdbcTemplate) {
+        return new PostgresAdminAuditRepository(jdbcTemplate);
+    }
+
+    @Bean
+    public AdminAuditService adminAuditService(AdminAuditRepositoryInterface adminAuditRepository) {
+        return new AdminAuditService(adminAuditRepository);
     }
 
     @Bean
@@ -121,7 +135,10 @@ public class ApplicationConfiguration {
     }
 
     @Bean
-    public UserManagementService userManagementService(AuthUserRepositoryInterface authUserRepository) {
-        return new UserManagementService(authUserRepository);
+    public UserManagementService userManagementService(
+            AuthUserRepositoryInterface authUserRepository,
+            AdminAuditRepositoryInterface adminAuditRepository
+    ) {
+        return new UserManagementService(authUserRepository, adminAuditRepository);
     }
 }

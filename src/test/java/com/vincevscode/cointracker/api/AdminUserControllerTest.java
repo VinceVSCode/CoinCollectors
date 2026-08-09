@@ -2,6 +2,7 @@
 package com.vincevscode.cointracker.api;
 
 import com.vincevscode.cointracker.config.SecurityConfig;
+import com.vincevscode.cointracker.model.AdminActor;
 import com.vincevscode.cointracker.model.UserRole;
 import com.vincevscode.cointracker.service.AuthUserQueryService;
 import com.vincevscode.cointracker.service.UserManagementService;
@@ -30,6 +31,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(AdminUserController.class)
 @Import({RestExceptionHandler.class, SecurityConfig.class})
 class AdminUserControllerTest {
+
+    // AuthTestSupport.asUser(1, ADMIN) builds a principal with username "user1", so this is
+    // the actor the controller derives and hands to the service.
+    private static final AdminActor ACTOR = new AdminActor(1, "user1");
 
     @Autowired
     private MockMvc mockMvc;
@@ -70,7 +75,7 @@ class AdminUserControllerTest {
 
     @Test
     void updateRole_shouldPromoteUserForAdmin() throws Exception {
-        when(userManagementService.setUserRole(2, UserRole.ADMIN))
+        when(userManagementService.setUserRole(ACTOR, 2, UserRole.ADMIN))
                 .thenReturn(new AdminUserView(2, "alex", UserRole.ADMIN, true));
 
         mockMvc.perform(
@@ -98,7 +103,7 @@ class AdminUserControllerTest {
 
     @Test
     void updateRole_shouldReturnBadRequestWhenServiceRejects() throws Exception {
-        when(userManagementService.setUserRole(1, UserRole.USER))
+        when(userManagementService.setUserRole(ACTOR, 1, UserRole.USER))
                 .thenThrow(new IllegalArgumentException("Cannot remove the last active administrator."));
 
         mockMvc.perform(
@@ -114,7 +119,7 @@ class AdminUserControllerTest {
 
     @Test
     void updateActive_shouldDeactivateUserForAdmin() throws Exception {
-        when(userManagementService.setUserActive(2, false))
+        when(userManagementService.setUserActive(ACTOR, 2, false))
                 .thenReturn(new AdminUserView(2, "alex", UserRole.USER, false));
 
         mockMvc.perform(

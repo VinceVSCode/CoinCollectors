@@ -6,6 +6,7 @@ import com.vincevscode.cointracker.api.dto.UpdateRoleRequest;
 import com.vincevscode.cointracker.service.UserManagementService;
 import com.vincevscode.cointracker.view.AdminUserView;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,24 +40,34 @@ public class AdminUserController {
     @PatchMapping("/{userId}/role")
     public AdminUserView updateRole(
             @PathVariable("userId") int userId,
-            @RequestBody UpdateRoleRequest request
+            @RequestBody UpdateRoleRequest request,
+            Authentication authentication
     ) {
         if (request == null || request.getRole() == null) {
             throw new IllegalArgumentException("Role is required.");
         }
 
-        return userManagementService.setUserRole(userId, request.getRole());
+        return userManagementService.setUserRole(
+                AdminActorFactory.fromAuthentication(authentication),
+                userId,
+                request.getRole()
+        );
     }
 
     @PatchMapping("/{userId}/active")
     public AdminUserView updateActive(
             @PathVariable("userId") int userId,
-            @RequestBody UpdateActiveRequest request
+            @RequestBody UpdateActiveRequest request,
+            Authentication authentication
     ) {
         if (request == null || request.getActive() == null) {
             throw new IllegalArgumentException("Active flag is required.");
         }
 
-        return userManagementService.setUserActive(userId, request.getActive());
+        return userManagementService.setUserActive(
+                AdminActorFactory.fromAuthentication(authentication),
+                userId,
+                request.getActive()
+        );
     }
 }

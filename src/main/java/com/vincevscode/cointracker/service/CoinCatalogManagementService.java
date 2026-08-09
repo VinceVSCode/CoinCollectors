@@ -1,6 +1,9 @@
 // v0.9.0: Service layer for admin coin catalog management (create, update, delete).
 package com.vincevscode.cointracker.service;
 
+import com.vincevscode.cointracker.model.AdminActionType;
+import com.vincevscode.cointracker.model.AdminActor;
+import com.vincevscode.cointracker.repository.AdminAuditRepositoryInterface;
 import com.vincevscode.cointracker.repository.CoinCatalogCommandRepositoryInterface;
 import com.vincevscode.cointracker.view.CoinCatalogView;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,23 +29,47 @@ public class CoinCatalogManagementService {
     // obvious typo (e.g. 20255) is rejected at the edge rather than stored.
     private static final int MAX_YEAR = 2999;
 
-    private final CoinCatalogCommandRepositoryInterface coinCatalogCommandRepository;
+    private static final String TARGET_TYPE_COIN = "COIN";
 
-    public CoinCatalogManagementService(CoinCatalogCommandRepositoryInterface coinCatalogCommandRepository) {
+    private final CoinCatalogCommandRepositoryInterface coinCatalogCommandRepository;
+    private final AdminAuditRepositoryInterface adminAuditRepository;
+
+    public CoinCatalogManagementService(
+            CoinCatalogCommandRepositoryInterface coinCatalogCommandRepository,
+            AdminAuditRepositoryInterface adminAuditRepository
+    ) {
         this.coinCatalogCommandRepository = coinCatalogCommandRepository;
+        this.adminAuditRepository = adminAuditRepository;
     }
 
     @Transactional
-    public CoinCatalogView createCoin(String country, String denomination, Integer year) {
+    public CoinCatalogView createCoin(AdminActor actor, String country, String denomination, Integer year) {
+        requireActor(actor);
+
         String validatedCountry = validateText(country, "Country");
         String validatedDenomination = validateText(denomination, "Denomination");
         int validatedYear = validateYear(year);
 
-        return coinCatalogCommandRepository.createCoin(validatedCountry, validatedDenomination, validatedYear);
+        CoinCatalogView created = coinCatalogCommandRepository.createCoin(
+                validatedCountry,
+                validatedDenomination,
+                validatedYear
+        );
+
+        adminAuditRepository.recordAction(
+                actor,
+                AdminActionType.COIN_CREATED,
+                TARGET_TYPE_COIN,
+                created.getCoinId(),
+                describe(created)
+        );
+
+        return created;
     }
 
     @Transactional
-    public CoinCatalogView updateCoin(int coinId, String country, String denomination, Integer year) {
+    public CoinCatalogView updateCoin(AdminActor actor, int coinId, String country, String denomination, Integer year) {
+        requireActor(actor);
         validateCoinId(coinId);
 
         String validatedCountry = validateText(country, "Country");
@@ -60,6 +87,14 @@ public class CoinCatalogManagementService {
             throw new IllegalArgumentException("Coin was not found.");
         }
 
+        adminAuditRepository.recordAction(
+                actor,
+                AdminActionType.COIN_UPDATED,
+                TARGET_TYPE_COIN,
+                coinId,
+                describe(updated)
+        );
+
         return updated;
     }
 
@@ -69,26 +104,49 @@ public class CoinCatalogManagementService {
      *              away with it.
      */
     @Transactional
-    public void deleteCoin(int coinId, boolean force) {
+    public void deleteCoin(AdminActor actor, int coinId, boolean force) {
+        requireActor(actor);
         validateCoinId(coinId);
 
-        if (coinCatalogCommandRepository.findCoinById(coinId) == null) {
+        CoinCatalogView existing = coinCatalogCommandRepository.findCoinById(coinId);
+
+        if (existing == null) {
             throw new IllegalArgumentException("Coin was not found.");
         }
 
-        if (!force) {
-            long affectedEntries = coinCatalogCommandRepository.countCollectionEntriesForCoin(coinId);
+        // Counted even when forcing, because the number of collection entries destroyed is the
+        // most important thing this action leaves behind — an audit record saying only "coin
+        // deleted" wouldn't capture that other users lost data.
+        long affectedEntries = coinCatalogCommandRepository.countCollectionEntriesForCoin(coinId);
 
-            if (affectedEntries > 0) {
-                throw new IllegalArgumentException(
-                        "This coin is in " + affectedEntries + " collection "
-                                + (affectedEntries == 1 ? "entry" : "entries")
-                                + ", which will be deleted with it. Confirm to delete anyway."
-                );
-            }
+        if (!force && affectedEntries > 0) {
+            throw new IllegalArgumentException(
+                    "This coin is in " + affectedEntries + " collection "
+                            + (affectedEntries == 1 ? "entry" : "entries")
+                            + ", which will be deleted with it. Confirm to delete anyway."
+            );
         }
 
         coinCatalogCommandRepository.deleteCoin(coinId);
+
+        adminAuditRepository.recordAction(
+                actor,
+                AdminActionType.COIN_DELETED,
+                TARGET_TYPE_COIN,
+                coinId,
+                describe(existing) + "; cascaded " + affectedEntries + " collection "
+                        + (affectedEntries == 1 ? "entry" : "entries")
+        );
+    }
+
+    private void requireActor(AdminActor actor) {
+        if (actor == null) {
+            throw new IllegalArgumentException("Acting administrator is required.");
+        }
+    }
+
+    private static String describe(CoinCatalogView coin) {
+        return coin.getCountry() + " " + coin.getDenomination() + " (" + coin.getYear() + ")";
     }
 
     private String validateText(String value, String fieldName) {
