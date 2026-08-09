@@ -6,12 +6,14 @@ import com.vincevscode.cointracker.api.dto.LoginRequest;
 import com.vincevscode.cointracker.api.dto.RegisterRequest;
 import com.vincevscode.cointracker.model.AuthUser;
 import com.vincevscode.cointracker.security.AuthUserDetails;
+import com.vincevscode.cointracker.security.LoginRateLimiter;
 import com.vincevscode.cointracker.service.UserRegistrationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
@@ -34,15 +36,18 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final UserRegistrationService userRegistrationService;
     private final SecurityContextRepository securityContextRepository;
+    private final LoginRateLimiter loginRateLimiter;
 
     public AuthController(
             AuthenticationManager authenticationManager,
             UserRegistrationService userRegistrationService,
-            SecurityContextRepository securityContextRepository
+            SecurityContextRepository securityContextRepository,
+            LoginRateLimiter loginRateLimiter
     ) {
         this.authenticationManager = authenticationManager;
         this.userRegistrationService = userRegistrationService;
         this.securityContextRepository = securityContextRepository;
+        this.loginRateLimiter = loginRateLimiter;
     }
 
     @PostMapping("/register")
@@ -66,13 +71,32 @@ public class AuthController {
             throw new IllegalArgumentException("Request body is required.");
         }
 
+        // getRemoteAddr(), never X-Forwarded-For: that header is client-supplied, so trusting it
+        // would let an attacker mint a fresh per-address budget on every request simply by
+        // varying it. If this app is ever put behind a reverse proxy, the proxy must be
+        // configured as a trusted source before any forwarded-for value can be honoured here.
+        String clientAddress = httpRequest.getRemoteAddr();
+
+        // Checked before authenticate() so a throttled attempt costs no BCrypt verification —
+        // which is exactly the expensive work a brute-force attempt is trying to make us do.
+        loginRateLimiter.checkAllowed(request.getUsername(), clientAddress);
+
         // authenticate() delegates to DaoAuthenticationProvider, which calls
         // AuthUserDetailsService + the BCrypt PasswordEncoder and throws AuthenticationException
         // (-> 401 via RestExceptionHandler) on a bad username/password without distinguishing
         // which one was wrong, to avoid leaking whether a username exists.
         Authentication authenticationRequest =
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword());
-        Authentication authentication = authenticationManager.authenticate(authenticationRequest);
+
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(authenticationRequest);
+        } catch (AuthenticationException exception) {
+            loginRateLimiter.recordFailure(request.getUsername(), clientAddress);
+            throw exception;
+        }
+
+        loginRateLimiter.recordSuccess(request.getUsername());
 
         // Manually building + saving the SecurityContext here (rather than relying on a
         // filter) is what makes this stateless-looking REST call actually establish a session:

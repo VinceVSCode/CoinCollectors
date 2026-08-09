@@ -18,11 +18,15 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 
+import static com.vincevscode.cointracker.support.AuthTestSupport.fromAddress;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -74,11 +78,74 @@ class AuthControllerSecurityTest {
         mockMvc.perform(
                         post("/api/auth/login")
                                 .with(csrf())
+                                .with(fromAddress("203.0.113.10"))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"username\":\"alex\",\"password\":\"wrong\"}")
                 )
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("Invalid username or password."));
+    }
+
+    // The 11th attempt exceeds the configured 10-per-window budget from SecurityConfig. Asserts
+    // the endpoint genuinely stops evaluating credentials, not just that the limiter counts.
+    @Test
+    void login_shouldReturnTooManyRequestsAfterRepeatedFailures() throws Exception {
+        when(authenticationManager.authenticate(any()))
+                .thenThrow(new BadCredentialsException("Bad credentials"));
+
+        for (int attempt = 0; attempt < 10; attempt++) {
+            mockMvc.perform(
+                            post("/api/auth/login")
+                                    .with(csrf())
+                                    .with(fromAddress("203.0.113.11"))
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content("{\"username\":\"throttled-user\",\"password\":\"wrong\"}")
+                    )
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(
+                        post("/api/auth/login")
+                                .with(csrf())
+                                .with(fromAddress("203.0.113.11"))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"username\":\"throttled-user\",\"password\":\"wrong\"}")
+                )
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(jsonPath("$.error").value(containsString("Too many login attempts")));
+
+        // Exactly 10 credential checks: the throttled request must not reach the authentication
+        // manager at all, or the BCrypt work a brute force is trying to inflict still happens.
+        verify(authenticationManager, times(10)).authenticate(any());
+    }
+
+    // A throttled unknown username must look identical to a throttled real one, or the 429
+    // becomes the enumeration oracle the generic 401 message exists to prevent.
+    @Test
+    void login_shouldThrottleUnknownUsernamesIdentically() throws Exception {
+        when(authenticationManager.authenticate(any()))
+                .thenThrow(new BadCredentialsException("Bad credentials"));
+
+        for (int attempt = 0; attempt < 10; attempt++) {
+            mockMvc.perform(
+                            post("/api/auth/login")
+                                    .with(csrf())
+                                    .with(fromAddress("203.0.113.12"))
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content("{\"username\":\"no-such-account\",\"password\":\"wrong\"}")
+                    )
+                    .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(
+                        post("/api/auth/login")
+                                .with(csrf())
+                                .with(fromAddress("203.0.113.12"))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"username\":\"no-such-account\",\"password\":\"wrong\"}")
+                )
+                .andExpect(status().isTooManyRequests());
     }
 
     @Test

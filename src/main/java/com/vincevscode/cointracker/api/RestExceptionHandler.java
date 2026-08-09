@@ -1,7 +1,10 @@
 // v0.4.0: REST exception handler for request validation errors.
 package com.vincevscode.cointracker.api;
 
+import com.vincevscode.cointracker.security.TooManyLoginAttemptsException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -46,5 +49,18 @@ public class RestExceptionHandler {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Map<String, String> handleAuthenticationException(AuthenticationException exception) {
         return Map.of("error", "Invalid username or password.");
+    }
+
+    // Thrown by LoginRateLimiter before credentials are checked. Kept distinct from the 401
+    // above on purpose: answering "invalid username or password" would be untrue (nothing was
+    // verified) and would leave a legitimate user unable to tell a wrong password from a
+    // temporary lockout. The message carries no signal about whether the account exists.
+    @ExceptionHandler(TooManyLoginAttemptsException.class)
+    public ResponseEntity<Map<String, String>> handleTooManyLoginAttemptsException(
+            TooManyLoginAttemptsException exception
+    ) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(exception.getRetryAfterSeconds()))
+                .body(Map.of("error", exception.getMessage()));
     }
 }

@@ -7,8 +7,12 @@ import com.vincevscode.cointracker.security.AuthUserDetailsService;
 import com.vincevscode.cointracker.security.CsrfCookieFilter;
 import com.vincevscode.cointracker.security.JsonAccessDeniedHandler;
 import com.vincevscode.cointracker.security.JsonAuthenticationEntryPoint;
+import com.vincevscode.cointracker.security.LoginRateLimiter;
 import com.vincevscode.cointracker.security.SpaCsrfTokenRequestHandler;
 import com.vincevscode.cointracker.service.AuthUserQueryService;
+
+import java.time.Clock;
+import java.time.Duration;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -64,6 +68,14 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
+    }
+
+    @Bean
+    public LoginRateLimiter loginRateLimiter() {
+        // 10 failures per username and per address within 15 minutes. Chosen to sit well above
+        // a person mistyping a password a few times, while still cutting an online guessing
+        // attack down to a rate at which even a short password outlasts any realistic attempt.
+        return new LoginRateLimiter(10, 10, Duration.ofMinutes(15), Clock.systemUTC());
     }
 
     @Bean
