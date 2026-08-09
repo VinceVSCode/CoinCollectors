@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 
+import static com.vincevscode.cointracker.support.AuthTestSupport.fromAddress;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
@@ -81,6 +82,7 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/api/auth/login")
                         .with(csrf())
+                        .with(fromAddress("198.51.100.10"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest("vince", "password123"))))
                 .andExpect(status().isOk())
@@ -95,6 +97,7 @@ class AuthControllerTest {
 
         mockMvc.perform(post("/api/auth/login")
                         .with(csrf())
+                        .with(fromAddress("198.51.100.11"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new LoginRequest("vince", "wrong"))))
                 .andExpect(status().isUnauthorized())

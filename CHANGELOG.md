@@ -3,6 +3,58 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.11.0] - YYYY-MM-DD - 2026-08-09
+
+Brute-force throttling on the login endpoint. The pen-test pass in 0.7.2 confirmed login does
+not leak whether an account exists, but nothing limited how fast guesses could be made.
+
+### Added
+- `LoginRateLimiter`: counts recent failed logins per username **and** per client address,
+  refusing further attempts once either crosses 10 within a rolling 15-minute window. Both keys
+  are tracked deliberately — throttling only by address does nothing against credential stuffing
+  spread across hosts, while throttling only by username lets an attacker deny service to any
+  account they can name. Windows expire on their own, so a targeted account is temporarily
+  slowed rather than locked out pending admin action.
+- `TooManyLoginAttemptsException` and a `RestExceptionHandler` mapping to **429** with a
+  `Retry-After` header. Kept distinct from the 401: answering "invalid username or password"
+  would be untrue (nothing was verified) and would leave a legitimate user unable to tell a
+  wrong password from a temporary lockout.
+- `LoginRateLimiterTest` (12 cases, driven by an injectable `Clock` so window expiry is tested
+  without sleeping) plus two endpoint-level cases in `AuthControllerSecurityTest`.
+- `AuthTestSupport.fromAddress(...)` for pinning a request's client address in tests.
+
+### Changed
+- `AuthController#login` consults the limiter **before** calling `authenticate()`, so a
+  throttled attempt costs no BCrypt verification — precisely the expensive work a brute-force
+  attempt is trying to inflict. A successful login clears the username's budget but deliberately
+  leaves the address budget intact, so an attacker holding one valid account cannot reset their
+  own address allowance between guesses.
+- Existing login tests now pin distinct client addresses. The limiter is a singleton and Spring
+  caches one context across slice tests with matching configuration, so tests sharing the
+  default 127.0.0.1 would have spent each other's budget and failed depending on order.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Security notes
+- Failures are counted for unknown usernames exactly as for real ones. Skipping the unknown case
+  would make "throttled or not" a reliable oracle for whether an account exists, undoing the
+  generic-error-message protection login already relies on. Covered by a regression test.
+- Usernames are lower-cased for keying, so alternating capitalisation cannot buy a fresh budget.
+- The client address comes from `getRemoteAddr()` and never `X-Forwarded-For`, which is
+  client-supplied and would let an attacker mint a new budget per request. Putting this app
+  behind a reverse proxy requires configuring the proxy as a trusted source first.
+- State is in-memory and per-instance, which suits the single-container deployment in
+  `docker-compose.yml`. Running multiple replicas would give each its own budget and multiply
+  the effective limit by the replica count — that is the point at which this needs shared
+  storage.
+
+### Bugs
+- N/A
+
 ## [0.10.0] - YYYY-MM-DD - 2026-08-03
 
 Audit trail for privileged actions. Role changes, activations/deactivations and every catalog

@@ -24,6 +24,20 @@ public final class AuthTestSupport {
     private AuthTestSupport() {
     }
 
+    /**
+     * Pins a request's client address. {@code LoginRateLimiter} keeps a per-address budget in a
+     * singleton bean, and Spring caches one application context across every slice test with the
+     * same configuration — so login tests that all defaulted to 127.0.0.1 would silently spend
+     * each other's budget and fail depending on execution order. Giving each test its own
+     * address keeps them independent.
+     */
+    public static RequestPostProcessor fromAddress(String clientAddress) {
+        return request -> {
+            request.setRemoteAddr(clientAddress);
+            return request;
+        };
+    }
+
     public static RequestPostProcessor asUser(int userId, UserRole role) {
         AuthUser authUser = new AuthUser(userId, "user" + userId, "hash", role, true, LocalDateTime.now());
         AuthUserDetails principal = new AuthUserDetails(authUser);
