@@ -5,6 +5,7 @@ import com.vincevscode.cointracker.config.SecurityConfig;
 import com.vincevscode.cointracker.model.AuthUser;
 import com.vincevscode.cointracker.model.UserRole;
 import com.vincevscode.cointracker.service.AuthUserQueryService;
+import com.vincevscode.cointracker.service.PasswordChangeService;
 import com.vincevscode.cointracker.service.UserRegistrationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,10 @@ class AuthControllerSecurityTest {
 
     @MockBean
     private UserRegistrationService userRegistrationService;
+
+    // AuthController now depends on this; the slice doesn't load ApplicationConfiguration.
+    @MockBean
+    private PasswordChangeService passwordChangeService;
 
     // Only needed to satisfy SecurityConfig's UserDetailsService bean dependency in this slice.
     @MockBean
@@ -113,7 +118,7 @@ class AuthControllerSecurityTest {
                 )
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().exists("Retry-After"))
-                .andExpect(jsonPath("$.error").value(containsString("Too many login attempts")));
+                .andExpect(jsonPath("$.error").value(containsString("Too many failed attempts")));
 
         // Exactly 10 credential checks: the throttled request must not reach the authentication
         // manager at all, or the BCrypt work a brute force is trying to inflict still happens.

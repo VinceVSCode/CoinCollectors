@@ -3,6 +3,59 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.12.0] - YYYY-MM-DD - 2026-08-09
+
+Self-service password change. Until now a password could only ever be the one chosen at
+registration — there was no way to rotate it after a suspected compromise.
+
+### Added
+- `PATCH /api/auth/password` taking `currentPassword` + `newPassword`. The account changed is
+  always the caller's own: the id comes from the authenticated principal, never the request, so
+  there is no field a caller could repoint at somebody else's account.
+- `PasswordChangeService`, which re-verifies the current password before applying the new one.
+  A session is not proof of knowing the password — it can be an unattended logged-in browser or
+  a stolen cookie, and without this check either could change the password and lock the real
+  owner out.
+- `PasswordPolicy`, now the single definition of the minimum-length rule, shared with
+  `UserRegistrationService`. A strength requirement enforced only at registration is no
+  requirement at all, since anyone could register with a compliant password and immediately
+  change to a weak one.
+- `ChangePasswordRequest` DTO (no username/userId fields, same allowlisting reasoning as
+  `RegisterRequest`), `AuthUserRepositoryInterface#updatePasswordHash` and its Postgres
+  implementation, and a Change Password form on the collection page.
+- `PasswordChangeServiceTest` (9) and `AuthControllerPasswordTest` (6).
+
+### Changed
+- `UserRegistrationService` delegates its length check to `PasswordPolicy` instead of holding
+  its own copy of the constant.
+- The two existing `AuthController` slice tests gained a `PasswordChangeService` mock bean, which
+  the controller now depends on.
+
+### Removed
+- N/A
+
+### Fixed
+- N/A
+
+### Security notes
+- A wrong current password returns **400, deliberately not 401**. The session is valid, so a 401
+  would misdescribe the failure — and the frontend treats 401 as "session expired" and would
+  redirect the user away from the form they were legitimately filling in.
+- Failed attempts consume the same `LoginRateLimiter` budget as failed logins, and its
+  rejection message was reworded from "Too many login attempts" to "Too many failed
+  attempts" now that it covers both endpoints. This endpoint
+  verifies a password, so leaving it unthrottled would give an attacker holding a stolen session
+  an unlimited oracle for guessing the real one, and would let them sidestep login throttling by
+  pivoting here. The trade-off is that a user who repeatedly mistypes their current password
+  also spends their login allowance.
+- **Known limitation:** changing the password does not invalidate other sessions. Authentication
+  is stored per-`HttpSession` with no session registry, so existing sessions — including an
+  attacker's — survive a password change. Revoking them needs a session registry (or the
+  existing deactivate/reactivate path as a blunt workaround).
+
+### Bugs
+- N/A
+
 ## [0.11.0] - YYYY-MM-DD - 2026-08-09
 
 Brute-force throttling on the login endpoint. The pen-test pass in 0.7.2 confirmed login does

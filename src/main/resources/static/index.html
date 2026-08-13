@@ -56,6 +56,17 @@
     </div>
     <div id="emptyState" class="empty-state" style="display: none;">No coins match your search.</div>
 </div>
+
+<div class="section">
+    <h2>Change Password</h2>
+    <form id="passwordForm" class="filter-bar">
+        <input type="password" id="currentPassword" placeholder="Current password"
+               autocomplete="current-password" required>
+        <input type="password" id="newPassword" placeholder="New password (min 8 characters)"
+               autocomplete="new-password" minlength="8" required>
+        <button type="submit" class="primary" id="passwordSubmitButton">Update password</button>
+    </form>
+</div>
 </div>
 
 <script src="js/auth.js"></script>
@@ -70,6 +81,10 @@
     const filterTabs = document.querySelectorAll(".filter-tabs button");
     const sortHeaders = document.querySelectorAll(".sort-header");
     const exportButton = document.getElementById("exportButton");
+    const passwordForm = document.getElementById("passwordForm");
+    const currentPasswordInput = document.getElementById("currentPassword");
+    const newPasswordInput = document.getElementById("newPassword");
+    const passwordSubmitButton = document.getElementById("passwordSubmitButton");
     const emptyState = document.getElementById("emptyState");
 
     let currentUserId = null;
@@ -282,6 +297,34 @@
     }
 
     exportButton.addEventListener("click", exportCsv);
+
+    // The session survives a password change, so there's nothing to re-authenticate here — the
+    // form just clears. A wrong current password comes back as a 400, not a 401, precisely so
+    // handleError doesn't mistake it for an expired session and redirect mid-form.
+    async function changePassword(event) {
+        event.preventDefault();
+        passwordSubmitButton.disabled = true;
+
+        try {
+            await CoinAuth.fetchJson("/api/auth/password", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    currentPassword: currentPasswordInput.value,
+                    newPassword: newPasswordInput.value
+                })
+            });
+
+            passwordForm.reset();
+            CoinUI.success("Password updated.");
+        } catch (error) {
+            handleError(error);
+        } finally {
+            passwordSubmitButton.disabled = false;
+        }
+    }
+
+    passwordForm.addEventListener("submit", changePassword);
 
     searchInput.addEventListener("input", renderCoins);
 

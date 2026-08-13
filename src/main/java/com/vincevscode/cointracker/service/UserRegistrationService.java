@@ -16,10 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code UserRegistrationServiceSecurityTest} pen-test pass).
  */
 public class UserRegistrationService {
-    // BCrypt truncates/rejects beyond 72 bytes; this floor is purely a UX/strength minimum,
-    // not related to BCrypt's own limit (see the >72-byte case verified in the security tests).
-    private static final int MINIMUM_PASSWORD_LENGTH = 8;
-
     private final AuthUserRepositoryInterface authUserRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -34,9 +30,7 @@ public class UserRegistrationService {
             throw new IllegalArgumentException("Username is required.");
         }
 
-        if (password == null || password.length() < MINIMUM_PASSWORD_LENGTH) {
-            throw new IllegalArgumentException("Password must be at least " + MINIMUM_PASSWORD_LENGTH + " characters.");
-        }
+        PasswordPolicy.validate(password, "Password");
 
         if (authUserRepository.findAuthUserByUsername(username) != null) {
             throw new IllegalArgumentException("Username is already taken.");

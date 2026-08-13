@@ -24,6 +24,7 @@ import javax.sql.DataSource;
 import com.vincevscode.cointracker.repository.AuthUserRepositoryInterface;
 import com.vincevscode.cointracker.repository.PostgresAuthUserRepository;
 import com.vincevscode.cointracker.service.AuthUserQueryService;
+import com.vincevscode.cointracker.service.PasswordChangeService;
 import com.vincevscode.cointracker.service.UserManagementService;
 import com.vincevscode.cointracker.service.UserRegistrationService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -132,6 +133,14 @@ public class ApplicationConfiguration {
             PasswordEncoder passwordEncoder
     ) {
         return new UserRegistrationService(authUserRepository, passwordEncoder);
+    }
+
+    @Bean
+    public PasswordChangeService passwordChangeService(
+            AuthUserRepositoryInterface authUserRepository,
+            PasswordEncoder passwordEncoder
+    ) {
+        return new PasswordChangeService(authUserRepository, passwordEncoder);
     }
 
     @Bean

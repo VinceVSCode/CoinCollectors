@@ -31,5 +31,10 @@ public interface AuthUserRepositoryInterface {
 
     AuthUser updateActive(int userId, boolean active);
 
+    /**
+     * @return the updated user, or {@code null} if no user has that id.
+     */
+    AuthUser updatePasswordHash(int userId, String passwordHash);
+
     long countActiveAdmins();
 }

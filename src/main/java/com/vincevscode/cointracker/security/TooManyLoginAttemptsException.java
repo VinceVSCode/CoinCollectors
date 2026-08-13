@@ -12,7 +12,10 @@ public class TooManyLoginAttemptsException extends RuntimeException {
     private final long retryAfterSeconds;
 
     public TooManyLoginAttemptsException(long retryAfterSeconds) {
-        super("Too many login attempts. Try again in " + retryAfterSeconds + " seconds.");
+        // Worded without naming login: the same budget also guards the password-change endpoint,
+        // and telling someone mid-password-change about "login attempts" describes the wrong
+        // thing they just did.
+        super("Too many failed attempts. Try again in " + retryAfterSeconds + " seconds.");
         this.retryAfterSeconds = retryAfterSeconds;
     }
 
