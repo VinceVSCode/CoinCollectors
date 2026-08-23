@@ -114,6 +114,17 @@ public class PostgresAuthUserRepository implements AuthUserRepositoryInterface {
     }
 
     @Override
+    public AuthUser updatePasswordHash(int userId, String passwordHash) {
+        int rowsUpdated = jdbcTemplate.update(
+                "UPDATE users SET password_hash = ? WHERE id = ?",
+                passwordHash,
+                userId
+        );
+
+        return rowsUpdated == 0 ? null : findAuthUserById(userId);
+    }
+
+    @Override
     public AuthUser updateActive(int userId, boolean active) {
         int rowsUpdated = jdbcTemplate.update(
                 "UPDATE users SET is_active = ? WHERE id = ?",

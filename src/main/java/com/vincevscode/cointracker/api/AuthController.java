@@ -2,11 +2,13 @@
 package com.vincevscode.cointracker.api;
 
 import com.vincevscode.cointracker.api.dto.AuthResponse;
+import com.vincevscode.cointracker.api.dto.ChangePasswordRequest;
 import com.vincevscode.cointracker.api.dto.LoginRequest;
 import com.vincevscode.cointracker.api.dto.RegisterRequest;
 import com.vincevscode.cointracker.model.AuthUser;
 import com.vincevscode.cointracker.security.AuthUserDetails;
 import com.vincevscode.cointracker.security.LoginRateLimiter;
+import com.vincevscode.cointracker.service.PasswordChangeService;
 import com.vincevscode.cointracker.service.UserRegistrationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,17 +40,20 @@ public class AuthController {
     private final UserRegistrationService userRegistrationService;
     private final SecurityContextRepository securityContextRepository;
     private final LoginRateLimiter loginRateLimiter;
+    private final PasswordChangeService passwordChangeService;
 
     public AuthController(
             AuthenticationManager authenticationManager,
             UserRegistrationService userRegistrationService,
             SecurityContextRepository securityContextRepository,
-            LoginRateLimiter loginRateLimiter
+            LoginRateLimiter loginRateLimiter,
+            PasswordChangeService passwordChangeService
     ) {
         this.authenticationManager = authenticationManager;
         this.userRegistrationService = userRegistrationService;
         this.securityContextRepository = securityContextRepository;
         this.loginRateLimiter = loginRateLimiter;
+        this.passwordChangeService = passwordChangeService;
     }
 
     @PostMapping("/register")
@@ -119,6 +125,49 @@ public class AuthController {
         // Security's default logout filter, just reachable via a JSON POST instead of a
         // server-rendered logout form/redirect.
         new SecurityContextLogoutHandler().logout(request, response, authentication);
+    }
+
+    /**
+     * Changes the caller's own password. Requires the current password even though the caller
+     * already has a session — see {@link PasswordChangeService} for why.
+     *
+     * <p>A wrong current password is a 400, deliberately not a 401. The session is perfectly
+     * valid, and a 401 would both misdescribe that and make the frontend bounce the user to the
+     * login page (its handleError treats 401 as "session gone") in the middle of a form they
+     * were legitimately filling in.
+     */
+    @PatchMapping("/password")
+    public void changePassword(
+            @RequestBody ChangePasswordRequest request,
+            Authentication authentication,
+            HttpServletRequest httpRequest
+    ) {
+        if (request == null) {
+            throw new IllegalArgumentException("Request body is required.");
+        }
+
+        AuthUserDetails principal = (AuthUserDetails) authentication.getPrincipal();
+        String clientAddress = httpRequest.getRemoteAddr();
+
+        // Shares the login limiter's budget on purpose. This endpoint verifies a password, so
+        // leaving it unthrottled would hand an attacker holding a stolen session an unlimited
+        // oracle for guessing the real password — and let them sidestep login throttling by
+        // pivoting here. The trade-off is that a user who repeatedly mistypes their current
+        // password also spends their login allowance.
+        loginRateLimiter.checkAllowed(principal.getUsername(), clientAddress);
+
+        try {
+            passwordChangeService.changePassword(
+                    principal.getUserId(),
+                    request.getCurrentPassword(),
+                    request.getNewPassword()
+            );
+        } catch (IllegalArgumentException exception) {
+            loginRateLimiter.recordFailure(principal.getUsername(), clientAddress);
+            throw exception;
+        }
+
+        loginRateLimiter.recordSuccess(principal.getUsername());
     }
 
     @GetMapping("/me")

@@ -11,6 +11,7 @@ import com.vincevscode.cointracker.model.AuthUser;
 import com.vincevscode.cointracker.model.UserRole;
 import com.vincevscode.cointracker.security.AuthUserDetails;
 import com.vincevscode.cointracker.service.AuthUserQueryService;
+import com.vincevscode.cointracker.service.PasswordChangeService;
 import com.vincevscode.cointracker.service.UserRegistrationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,10 @@ class AuthControllerTest {
 
     @MockBean
     private UserRegistrationService userRegistrationService;
+
+    // AuthController now depends on this; the slice doesn't load ApplicationConfiguration.
+    @MockBean
+    private PasswordChangeService passwordChangeService;
 
     // Unused directly; only needed to satisfy SecurityConfig's UserDetailsService bean dependency in this slice.
     @MockBean
