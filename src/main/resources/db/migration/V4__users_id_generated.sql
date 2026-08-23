@@ -1,7 +1,8 @@
 -- Same retrofit as V2, but for `users.id` — required so UserRegistrationService can register
 -- new accounts (via PostgresAuthUserRepository#createAuthUser) without callers ever having to
--- pick an id themselves. seed_data.sql's comment documents the resulting vince=1/alex=2/maria=3
--- ordering this sequence produces for the dev seed data.
+-- pick an id themselves. Note this sequence is never restarted once created, so the ids it
+-- hands out to the dev seed accounts are only 1/2/3 on a pristine database — seed_data.sql
+-- must not (and does not) assume any particular value.
 CREATE SEQUENCE IF NOT EXISTS users_id_seq
     START WITH 1
     INCREMENT BY 1;

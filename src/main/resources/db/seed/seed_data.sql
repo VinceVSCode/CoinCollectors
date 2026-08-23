@@ -1,5 +1,9 @@
 -- Dev-only seed accounts, password for all three is "password123". Never used in production.
--- IDs are auto-generated (users_id_seq, from V4) in insertion order: vince=1, alex=2, maria=3.
+-- IDs are auto-generated (users_id_seq, from V4) and are NOT predictable: they are only
+-- 1/2/3 on a pristine database. users_id_seq keeps advancing across truncations (the
+-- integration test suite empties `users` without resetting it, and reset_data.sql deliberately
+-- doesn't restart it either), so a re-seed can land on 4/5/6 or higher. Nothing below may
+-- assume a particular id — collection_entries resolves users by username instead.
 -- The password_hash values are real BCrypt hashes of "password123" (not placeholders) so
 -- login actually works against seeded accounts without any extra setup step.
 -- Idempotent: ON CONFLICT DO NOTHING lets DatabaseBootstrap re-run this seed safely against an
@@ -24,13 +28,20 @@ ON CONFLICT (id) DO NOTHING;
 -- "explicit zero counts as not-owned" behavior in the owned/missing coin queries (see
 -- PostgresCollectionEntryRepository) rather than every seeded coin being either owned or
 -- entirely absent.
-INSERT INTO collection_entries (user_id, coin_id, quantity) VALUES
-    (1, 1, 2),
-    (1, 2, 1),
-    (1, 3, 0),
-    (1, 4, 0),
-    (2, 2, 3),
-    (2, 5, 1),
-    (3, 1, 0),
-    (3, 6, 2)
+-- user_id is looked up by username rather than hardcoded, because seeded user ids are not
+-- stable (see the header comment). The JOIN also means a row whose username somehow isn't
+-- present is skipped rather than failing fk_collection_entries_user at startup.
+INSERT INTO collection_entries (user_id, coin_id, quantity)
+SELECT u.id, v.coin_id, v.quantity
+FROM (VALUES
+    ('vince', 1, 2),
+    ('vince', 2, 1),
+    ('vince', 3, 0),
+    ('vince', 4, 0),
+    ('alex', 2, 3),
+    ('alex', 5, 1),
+    ('maria', 1, 0),
+    ('maria', 6, 2)
+) AS v(username, coin_id, quantity)
+JOIN users u ON u.username = v.username
 ON CONFLICT (user_id, coin_id) DO NOTHING;

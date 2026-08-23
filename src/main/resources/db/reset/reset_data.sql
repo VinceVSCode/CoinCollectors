@@ -2,8 +2,8 @@
 -- optional seed load. Deletion order matters: collection_entries first because it FKs to both
 -- users and coins (ON DELETE CASCADE would handle this anyway, but being explicit avoids
 -- relying on cascade order). Note: only collection_entries_id_seq is reset here — users_id_seq
--- is NOT restarted, so a reset+reseed after some registrations will NOT reproduce the
--- vince=1/alex=2/maria=3 ids seed_data.sql's comment assumes.
+-- is NOT restarted, so a reset+reseed after some registrations gives the seed accounts fresh,
+-- higher ids. That's fine: seed_data.sql resolves users by username, not by id.
 DELETE FROM collection_entries;
 DELETE FROM users;
 DELETE FROM coins;
