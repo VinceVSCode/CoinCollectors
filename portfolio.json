@@ -1,0 +1,21 @@
+{
+  "id": "coin-collectors",
+  "title": "Coin Collectors",
+  "track": "software-developer",
+  "summary": "A web app for tracking personal coin collections: accounts, a shared catalogue, completion progress and an admin panel. Spring Boot REST API with PostgreSQL.",
+  "skills": [
+    "Java",
+    "Spring Boot",
+    "Spring Security",
+    "PostgreSQL",
+    "JavaScript",
+    "Docker"
+  ],
+  "repo": "https://github.com/VinceVSCode/CoinCollectors",
+  "demo_url": null,
+  "thumbnail": null,
+  "demo_media": null,
+  "run_command": "docker compose up --build",
+  "status": "first-attempt",
+  "version": null
+}
