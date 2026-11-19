@@ -60,5 +60,6 @@ Desktop.ini
 .env.*.local
 
 ### Claude Code local files ###
-.claude/settings.local.json
-.claude/worktrees/
+
+# Local AI assistant files, kept out of the repository
+.claude/
